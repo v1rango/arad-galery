@@ -18,7 +18,7 @@ export default function CategorySidebar({ isMobile = false, onClose }: Props) {
   };
 
   return (
-    <aside className="w-full h-full bg-white dark:bg-black border-l border-royal-500/10">
+    <aside className="w-full h-full bg-white dark:bg-black">
       <div className="p-5 border-b border-royal-500/10 flex items-center justify-between">
         <h2 className="text-lg font-black bg-gradient-to-l from-royal-500 to-blush-500 bg-clip-text text-transparent">
           دسته‌بندی محصولات

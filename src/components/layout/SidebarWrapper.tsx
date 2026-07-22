@@ -9,9 +9,11 @@ export default function SidebarWrapper() {
 
   return (
     <>
-      <aside className="hidden lg:block w-72 shrink-0 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
-        <CategorySidebar />
-      </aside>
+      <div className="hidden lg:block w-72 shrink-0">
+        <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto border-l border-royal-500/10">
+          <CategorySidebar />
+        </div>
+      </div>
 
       <button
         onClick={() => setIsMobileOpen(true)}
@@ -23,11 +25,11 @@ export default function SidebarWrapper() {
 
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-in fade-in duration-200"
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
           onClick={() => setIsMobileOpen(false)}
         >
           <div
-            className="absolute right-0 top-0 h-full w-80 max-w-[85%] animate-in slide-in-from-right duration-300"
+            className="absolute right-0 top-0 h-full w-80 max-w-[85%] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <CategorySidebar isMobile onClose={() => setIsMobileOpen(false)} />

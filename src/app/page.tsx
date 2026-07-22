@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { Sparkles, ArrowLeft, ShieldCheck, Truck, Award } from "lucide-react";
+import ProductSection from "@/components/product/ProductSection";
+import { mockProducts } from "@/lib/mockProducts";
 
 export default function Home() {
+  const bestSellers = mockProducts.slice(0, 4);
+  const newArrivals = mockProducts.slice(4, 8);
+
   return (
     <div>
       <section className="relative overflow-hidden">
@@ -84,6 +89,20 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <ProductSection
+        title="پرفروش‌ترین محصولات"
+        subtitle="محبوب‌ترین محصولات از دید مشتریان آراد گالری"
+        products={bestSellers}
+        viewAllHref="/products"
+      />
+
+      <ProductSection
+        title="جدیدترین محصولات"
+        subtitle="تازه‌ترین محصولاتی که به فروشگاه اضافه شدن"
+        products={newArrivals}
+        viewAllHref="/products"
+      />
     </div>
   );
 }

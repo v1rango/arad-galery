@@ -3,7 +3,7 @@ import "./globals.css";
 import "@fontsource/vazirmatn/400.css";
 import "@fontsource/vazirmatn/500.css";
 import "@fontsource/vazirmatn/700.css";
-import "@fontsource/vazigit add .rmatn/900.css";
+import "@fontsource/vazirmatn/900.css";
 import ThemeProvider from "@/providers/ThemeProvider";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -24,7 +24,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <Header />
-          <div className="flex max-w-[1600px] mx-auto">
+          <div className="flex flex-col lg:flex-row max-w-[1600px] mx-auto">
             <SidebarWrapper />
             <main className="flex-1 min-w-0">{children}</main>
           </div>
