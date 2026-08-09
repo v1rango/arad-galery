@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String     @id @default(cuid())
+  phone     String     @unique
+  name      String?
+  email     String?    @unique
+  role      Role       @default(USER)
+  addresses Address[]
+  orders    Order[]
+  wishlist  Wishlist[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
+
+model Category {
+  id              String     @id @default(cuid())
+  name            String
+  slug            String     @unique
+  emoji           String?
+  seoTitle        String?
+  seoDescription  String?
+  seoKeywords     String?
+  parentId        String?
+  parent          Category?  @relation("CategoryToSubcategory", fields: [parentId], references: [id], onDelete: Cascade)
+  children        Category[] @relation("CategoryToSubcategory")
+  products        Product[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model Product {
+  id                String         @id @default(cuid())
+  slug              String         @unique
+  title             String
+  brand             String
+  description       String?
+  seoTitle          String?
+  seoDescription    String?
+  seoKeywords       String?
+  price             Int
+  discountPrice     Int?
+  inStock           Boolean        @default(true)
+  stockCount        Int            @default(0)
+  lowStockThreshold Int            @default(3)
+  isNew             Boolean        @default(false)
+  isActive          Boolean        @default(true)
+
+  categoryId        String
+  category          Category       @relation(fields: [categoryId], references: [id])
+
+  images            ProductImage[]
+  specs             ProductSpec[]
+  orderItems        OrderItem[]
+  wishlistItems     Wishlist[]
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  url       String
+  order     Int     @default(0)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductSpec {
+  id        String  @id @default(cuid())
+  key       String
+  value     String
+  order     Int     @default(0)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName   String
+  phone      String
+  province   String
+  city       String
+  address    String
+  postalCode String
+  isDefault  Boolean  @default(false)
+  orders     Order[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Order {
+  id             String        @id @default(cuid())
+  orderNumber    String        @unique
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  addressId      String
+  address        Address       @relation(fields: [addressId], references: [id])
+  items          OrderItem[]
+
+  subtotal       Int
+  shippingCost   Int           @default(0)
+  discountAmount Int           @default(0)
+  totalAmount    Int
+
+  status         OrderStatus   @default(PENDING)
+  paymentMethod  PaymentMethod @default(ONLINE)
+  paymentStatus  PaymentStatus @default(PENDING)
+  paymentRef     String?
+
+  customerNote   String?
+  adminNote      String?
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id            String  @id @default(cuid())
+  orderId       String
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product @relation(fields: [productId], references: [id])
+
+  productTitle  String
+  productBrand  String
+  productImage  String?
+
+  price         Int
+  discountPrice Int?
+  quantity      Int
+  totalPrice    Int
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  ONLINE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+model Settings {
+  id                    String   @id @default(cuid())
+  shippingCost          Int      @default(50000)
+  freeShippingThreshold Int      @default(2000000)
+  lowStockThreshold     Int      @default(3)
+  storeName             String   @default("آراد گالری")
+  storePhone            String   @default("09395574472")
+  storePhone2           String?
+  storeAddress          String   @default("تهران، منطقه ۲۱، شهرک چیتگر شمالی، خیابان جهاد، نبش کوچه صفین")
+  instagramHandle       String?
+  telegramHandle        String?
+  whatsappNumber        String?
+  workingHours          String   @default("شنبه تا پنجشنبه: ۹:۰۰ تا ۲۱:۰۰")
+  smsEnabled            Boolean  @default(false)
+  kavenegarApiKey       String?
+  kavenegarSenderNumber String?
+  updatedAt             DateTime @updatedAt
+  createdAt             DateTime @default(now())
+}

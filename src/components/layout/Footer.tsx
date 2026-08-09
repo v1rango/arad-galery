@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Phone, MapPin, Send, MessageCircle } from "lucide-react";
 import { FaInstagram } from "react-icons/fa";
+import Logo from "@/components/ui/Logo";
 
 export default function Footer() {
   return (
@@ -10,9 +11,7 @@ export default function Footer() {
 
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-royal-500 to-blush-500 flex items-center justify-center">
-                <span className="text-white font-black text-lg">آ</span>
-              </div>
+              <Logo size={40} />
               <span className="text-xl font-black bg-gradient-to-l from-royal-500 to-blush-500 bg-clip-text text-transparent">
                 آراد گالری
               </span>

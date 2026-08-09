@@ -12,7 +12,8 @@
 
 # testing
 /coverage
-
+.env
+.env.*.local
 # next.js
 /.next/
 /out/
@@ -39,3 +40,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+# uploads
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# unnecessary tools
+.windsurf/
+.claude/
+.agents/
+skills-lock.json
+prisma.config.ts
