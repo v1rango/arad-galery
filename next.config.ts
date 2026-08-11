@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
+
+  outputFileTracingIncludes: {
+    "/*": ["./src/generated/**/*"],
+  },
+
+  serverExternalPackages: ["@prisma/client", ".prisma/client"],
+
   images: {
     remotePatterns: [
       {
@@ -11,6 +19,7 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: true,
     unoptimized: true,
   },
+
   async headers() {
     return [
       {
