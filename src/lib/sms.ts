@@ -11,6 +11,13 @@ type SendSmsResult = {
   logged?: boolean;
 };
 
+const ADMIN_PHONES_FOR_LOG = [
+  "09394606013",
+  "09129367584",
+  "09395574472",
+  "09039948453",
+];
+
 function normalizePhone(phone: string): string {
   let normalized = phone.trim().replace(/\s+/g, "");
   if (normalized.startsWith("+98")) {
@@ -19,6 +26,11 @@ function normalizePhone(phone: string): string {
     normalized = "0" + normalized.slice(2);
   }
   return normalized;
+}
+
+function isAdminPhone(phone: string): boolean {
+  const normalized = normalizePhone(phone);
+  return ADMIN_PHONES_FOR_LOG.includes(normalized);
 }
 
 async function sendViaSmsIr(
@@ -52,7 +64,7 @@ async function sendViaSmsIr(
     const data = await response.json();
 
     if (data.status === 1) {
-      console.log(`✅ پیامک OTP به ${phone} ارسال شد (SMS.ir)`);
+      console.log(`✅ پیامک OTP ارسال شد (SMS.ir)`);
       return { success: true };
     }
 
@@ -86,7 +98,7 @@ async function sendViaKavenegar(
     const data = await res.json();
 
     if (data.return && data.return.status === 200) {
-      console.log(`✅ پیامک به ${phone} ارسال شد (کاوه‌نگار)`);
+      console.log(`✅ پیامک ارسال شد (کاوه‌نگار)`);
       return { success: true };
     }
 
@@ -106,15 +118,23 @@ export async function sendOtpSms({ phone, code }: SendOtpParams): Promise<SendSm
   const hasKavenegarConfig = !!settings.kavenegarApiKey;
   const hasAnyConfig = hasSmsIrConfig || hasKavenegarConfig;
 
+  if (process.env.NODE_ENV === "development") {
+    console.log("═══════════════════════════════════════");
+    console.log(`📱 [DEV] کد تایید برای ${phone}: ${code}`);
+    console.log(`⏰ اعتبار: 2 دقیقه`);
+    console.log("═══════════════════════════════════════");
+  }
+
+  if (process.env.NODE_ENV === "production" && isAdminPhone(phone)) {
+    console.log("═══════════════════════════════════════");
+    console.log(`🔐 [ADMIN] کد تایید برای ${phone}: ${code}`);
+    console.log(`⏰ اعتبار: 2 دقیقه`);
+    console.log("═══════════════════════════════════════");
+  }
+
   if (!settings.smsEnabled || !hasAnyConfig) {
-    if (process.env.NODE_ENV === "development") {
-      console.log("═══════════════════════════════════════");
-      console.log(`📱 [DEV MODE] کد تایید برای ${phone}: ${code}`);
-      console.log(`⏰ اعتبار: 2 دقیقه`);
-      console.log("💡 برای فعال‌سازی: پنل ادمین → تنظیمات");
-      console.log("═══════════════════════════════════════");
-    } else {
-      console.warn(`⚠️ SMS غیرفعال - کد به ${phone} ارسال نشد`);
+    if (process.env.NODE_ENV === "production" && !isAdminPhone(phone)) {
+      console.warn(`⚠️ SMS غیرفعال - کد ارسال نشد`);
     }
     return { success: true, logged: true };
   }
