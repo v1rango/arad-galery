@@ -1,7 +1,8 @@
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SidebarWrapper from "@/components/layout/SidebarWrapper";
-
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export default function SiteLayout({
   children,
 }: {

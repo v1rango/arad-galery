@@ -1,8 +1,17 @@
 {
   "platform": "next",
-  "app": "arad-gallery",
   "port": 3000,
   "build": {
     "location": "iran"
-  }
+  },
+  "next": {
+    "nodeVersion": "22"
+  },
+  "disks": [
+    {
+      "name": "arad-disk",
+      "mountTo": "public/uploads"
+    }
+  ],
+  "defaultDomain": "arad-gallery.ir"
 }

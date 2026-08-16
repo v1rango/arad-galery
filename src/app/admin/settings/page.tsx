@@ -32,6 +32,9 @@ type Settings = {
   whatsappNumber: string | null;
   workingHours: string;
   smsEnabled: boolean;
+  smsProvider: string;
+  smsApiKey: string | null;
+  smsTemplateId: string | null;
   kavenegarApiKey: string | null;
   kavenegarSenderNumber: string | null;
 };
@@ -53,6 +56,9 @@ export default function AdminSettingsPage() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [workingHours, setWorkingHours] = useState("");
   const [smsEnabled, setSmsEnabled] = useState(false);
+  const [smsProvider, setSmsProvider] = useState("smsir");
+  const [smsApiKey, setSmsApiKey] = useState("");
+  const [smsTemplateId, setSmsTemplateId] = useState("");
   const [kavenegarApiKey, setKavenegarApiKey] = useState("");
   const [kavenegarSenderNumber, setKavenegarSenderNumber] = useState("");
 
@@ -76,6 +82,9 @@ export default function AdminSettingsPage() {
           setWhatsappNumber(s.whatsappNumber || "");
           setWorkingHours(s.workingHours || "");
           setSmsEnabled(s.smsEnabled || false);
+          setSmsProvider(s.smsProvider || "smsir");
+          setSmsApiKey(s.smsApiKey || "");
+          setSmsTemplateId(s.smsTemplateId || "");
           setKavenegarApiKey(s.kavenegarApiKey || "");
           setKavenegarSenderNumber(s.kavenegarSenderNumber || "");
         }
@@ -110,6 +119,9 @@ export default function AdminSettingsPage() {
           whatsappNumber,
           workingHours,
           smsEnabled,
+          smsProvider,
+          smsApiKey,
+          smsTemplateId,
           kavenegarApiKey,
           kavenegarSenderNumber,
         }),
@@ -323,9 +335,7 @@ export default function AdminSettingsPage() {
               dir="ltr"
               className="w-full px-3 py-2.5 rounded-xl bg-royal-500/5 border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm text-gray-900 dark:text-white transition-colors text-right"
             />
-            <p className="text-[10px] text-gray-500 mt-1">
-              بدون @ وارد کنید
-            </p>
+            <p className="text-[10px] text-gray-500 mt-1">بدون @ وارد کنید</p>
           </div>
 
           <div>
@@ -356,16 +366,14 @@ export default function AdminSettingsPage() {
               dir="ltr"
               className="w-full px-3 py-2.5 rounded-xl bg-royal-500/5 border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm text-gray-900 dark:text-white transition-colors text-right"
             />
-            <p className="text-[10px] text-gray-500 mt-1">
-              با کد کشور (مثلاً 989121234567)
-            </p>
+            <p className="text-[10px] text-gray-500 mt-1">با کد کشور (مثلاً 989121234567)</p>
           </div>
         </section>
 
         <section className="bg-white dark:bg-royal-500/5 rounded-2xl border border-royal-500/10 p-5 space-y-4">
           <h2 className="text-base font-black text-gray-900 dark:text-white pb-3 border-b border-royal-500/10 flex items-center gap-2">
             <MessageCircle size={18} className="text-blue-500" />
-            <span>سرویس پیامک (کاوه‌نگار)</span>
+            <span>سرویس پیامک</span>
           </h2>
 
           <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
@@ -383,7 +391,7 @@ export default function AdminSettingsPage() {
                 <div className="text-[11px] leading-6">
                   {smsEnabled ? (
                     <span className="text-green-600 font-medium">
-                      ✅ پیامک‌ها واقعاً ارسال می‌شوند (هزینه از پنل کاوه‌نگار کسر می‌شود)
+                      ✅ پیامک‌ها واقعاً ارسال می‌شوند (هزینه از اعتبار حساب کسر می‌شود)
                     </span>
                   ) : (
                     <span className="text-gray-500">
@@ -397,37 +405,108 @@ export default function AdminSettingsPage() {
 
           <div>
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
-              API Key کاوه‌نگار
+              انتخاب سرویس پیامک
             </label>
-            <input
-              type="text"
-              value={kavenegarApiKey}
-              onChange={(e) => setKavenegarApiKey(e.target.value)}
-              placeholder="مثلاً: 4A6B7C8D..."
-              dir="ltr"
-              className="w-full px-3 py-2.5 rounded-xl bg-royal-500/5 border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm text-gray-900 dark:text-white transition-colors text-right font-mono"
-            />
-            <p className="text-[10px] text-gray-500 mt-1">
-              از پنل کاوه‌نگار → منوی حساب کاربری → API Key
-            </p>
+            <select
+              value={smsProvider}
+              onChange={(e) => setSmsProvider(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl bg-royal-500/5 border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm text-gray-900 dark:text-white transition-colors"
+            >
+              <option value="smsir">SMS.ir (پیشنهاد شده)</option>
+              <option value="kavenegar">کاوه‌نگار</option>
+            </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
-              شماره فرستنده
-            </label>
-            <input
-              type="text"
-              value={kavenegarSenderNumber}
-              onChange={(e) => setKavenegarSenderNumber(e.target.value)}
-              placeholder="10004346"
-              dir="ltr"
-              className="w-full px-3 py-2.5 rounded-xl bg-royal-500/5 border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm text-gray-900 dark:text-white transition-colors text-right"
-            />
-            <p className="text-[10px] text-gray-500 mt-1">
-              شماره‌ی خط اختصاصی یا اشتراکی کاوه‌نگار
-            </p>
-          </div>
+          {smsProvider === "smsir" && (
+            <>
+              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                <p className="text-[11px] text-green-700 dark:text-green-400 leading-6">
+                  💡 برای دریافت API Key و Template ID، به{" "}
+                  <a
+                    href="https://app.sms.ir"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-bold"
+                  >
+                    پنل SMS.ir
+                  </a>{" "}
+                  مراجعه کنید.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  API Key (SMS.ir)
+                </label>
+                <input
+                  type="text"
+                  value={smsApiKey}
+                  onChange={(e) => setSmsApiKey(e.target.value)}
+                  placeholder="مثلاً: xE...kd"
+                  dir="ltr"
+                  className="w-full px-3 py-2.5 rounded-xl bg-royal-500/5 border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm text-gray-900 dark:text-white transition-colors text-right font-mono"
+                />
+                <p className="text-[10px] text-gray-500 mt-1">
+                  از پنل SMS.ir → بخش برنامه‌نویسان → API Key
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  Template ID (شناسه الگو)
+                </label>
+                <input
+                  type="text"
+                  value={smsTemplateId}
+                  onChange={(e) => setSmsTemplateId(e.target.value.replace(/\D/g, ""))}
+                  placeholder="مثلاً: 123456"
+                  dir="ltr"
+                  className="w-full px-3 py-2.5 rounded-xl bg-royal-500/5 border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm text-gray-900 dark:text-white transition-colors text-right font-mono"
+                />
+                <p className="text-[10px] text-gray-500 mt-1">
+                  کد الگویی که در پنل SMS.ir ساختید (باید پارامتر code داشته باشد)
+                </p>
+              </div>
+            </>
+          )}
+
+          {smsProvider === "kavenegar" && (
+            <>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  API Key کاوه‌نگار
+                </label>
+                <input
+                  type="text"
+                  value={kavenegarApiKey}
+                  onChange={(e) => setKavenegarApiKey(e.target.value)}
+                  placeholder="مثلاً: 4A6B7C8D..."
+                  dir="ltr"
+                  className="w-full px-3 py-2.5 rounded-xl bg-royal-500/5 border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm text-gray-900 dark:text-white transition-colors text-right font-mono"
+                />
+                <p className="text-[10px] text-gray-500 mt-1">
+                  از پنل کاوه‌نگار → حساب کاربری → API Key
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  شماره فرستنده
+                </label>
+                <input
+                  type="text"
+                  value={kavenegarSenderNumber}
+                  onChange={(e) => setKavenegarSenderNumber(e.target.value)}
+                  placeholder="10004346"
+                  dir="ltr"
+                  className="w-full px-3 py-2.5 rounded-xl bg-royal-500/5 border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm text-gray-900 dark:text-white transition-colors text-right"
+                />
+                <p className="text-[10px] text-gray-500 mt-1">
+                  شماره‌ی خط اختصاصی یا اشتراکی کاوه‌نگار
+                </p>
+              </div>
+            </>
+          )}
         </section>
 
         <div className="flex items-center justify-end gap-3 pt-2">
@@ -455,9 +534,7 @@ export default function AdminSettingsPage() {
         <div className="flex items-start gap-3">
           <AlertTriangle size={24} className="text-red-500 shrink-0 mt-1" />
           <div className="flex-1">
-            <h3 className="text-sm font-black text-red-500 mb-1">
-              منطقه خطر
-            </h3>
+            <h3 className="text-sm font-black text-red-500 mb-1">منطقه خطر</h3>
             <p className="text-xs text-gray-700 dark:text-gray-300 leading-6 mb-3">
               عملیات حساس مثل پاک کردن همه محصولات فروشگاه
             </p>

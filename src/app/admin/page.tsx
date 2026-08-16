@@ -8,7 +8,8 @@ import {
   TrendingUp,
   Plus,
 } from "lucide-react";
-
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 async function getDashboardStats() {
   const [totalProducts, totalUsers, lowStockProducts, outOfStockProducts] =
     await Promise.all([

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import { requireAdmin } from "@/lib/adminAuth";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 export async function POST(request: NextRequest) {
@@ -42,14 +42,16 @@ export async function POST(request: NextRequest) {
     }
 
     const extension = file.name.split(".").pop() || "jpg";
-    const filename = `product-${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
+    const filename = `product-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}.${extension}`;
     const filepath = path.join(uploadsDir, filename);
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     await writeFile(filepath, buffer);
 
-    const publicUrl = `/uploads/${filename}`;
+const publicUrl = `/api/uploads/${filename}`;
 
     return NextResponse.json({
       success: true,
@@ -60,6 +62,37 @@ export async function POST(request: NextRequest) {
     console.error("خطا در آپلود:", error);
     return NextResponse.json(
       { success: false, error: "خطا در آپلود فایل" },
+      { status: 500 }
+    );
+  }
+}
+
+// حذف فایل از disk
+export async function DELETE(request: NextRequest) {
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  try {
+    const { filename } = await request.json();
+
+    if (!filename) {
+      return NextResponse.json(
+        { success: false, error: "نام فایل مشخص نیست" },
+        { status: 400 }
+      );
+    }
+
+    const filepath = path.join(process.cwd(), "public", "uploads", filename);
+    
+    if (existsSync(filepath)) {
+      await unlink(filepath);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("خطا در حذف:", error);
+    return NextResponse.json(
+      { success: false, error: "خطا در حذف فایل" },
       { status: 500 }
     );
   }

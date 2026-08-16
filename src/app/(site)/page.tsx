@@ -4,6 +4,10 @@ import ProductSection from "@/components/product/ProductSection";
 import { prisma } from "@/lib/prisma";
 import { Product } from "@/types/product";
 
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function getHomeProducts() {
   const bestSellers = await prisma.product.findMany({
     where: { isActive: true },

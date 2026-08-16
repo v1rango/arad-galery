@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import AdminShell from "@/components/admin/AdminShell";
-
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const metadata = {
   title: "پنل مدیریت | آراد گالری",
 };

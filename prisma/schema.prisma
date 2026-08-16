@@ -1,12 +1,12 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
-
 model User {
   id        String     @id @default(cuid())
   phone     String     @unique
@@ -210,7 +210,6 @@ model Wishlist {
   @@index([userId])
   @@index([productId])
 }
-
 model Settings {
   id                    String   @id @default(cuid())
   shippingCost          Int      @default(50000)
@@ -225,6 +224,9 @@ model Settings {
   whatsappNumber        String?
   workingHours          String   @default("شنبه تا پنجشنبه: ۹:۰۰ تا ۲۱:۰۰")
   smsEnabled            Boolean  @default(false)
+  smsProvider           String   @default("smsir")
+  smsApiKey             String?
+  smsTemplateId         String?
   kavenegarApiKey       String?
   kavenegarSenderNumber String?
   updatedAt             DateTime @updatedAt
