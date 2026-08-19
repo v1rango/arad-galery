@@ -16,7 +16,7 @@ const PHONE_WINDOW_MS = 15 * 60 * 1000;
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const ipLimit = rateLimit(`otp:ip:${ip}`, IP_MAX_REQUESTS, IP_WINDOW_MS);
+    const ipLimit = await rateLimit(`otp:ip:${ip}`, IP_MAX_REQUESTS, IP_WINDOW_MS);
 
     if (!ipLimit.success) {
       const minutes = Math.ceil(ipLimit.resetIn / 60000);
@@ -46,8 +46,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const phoneLimit = rateLimit(
+      const phoneLimit = await rateLimit(
       `otp:phone:${phone}`,
       PHONE_MAX_REQUESTS,
       PHONE_WINDOW_MS

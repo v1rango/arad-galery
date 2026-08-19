@@ -6,7 +6,7 @@ import { rateLimit, getClientIp } from "@/lib/rateLimit";
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const ipLimit = rateLimit(`verify:ip:${ip}`, 10, 15 * 60 * 1000);
+const ipLimit = await rateLimit(`verify:ip:${ip}`, 10, 15 * 60 * 1000);
 
     if (!ipLimit.success) {
       const minutes = Math.ceil(ipLimit.resetIn / 60000);

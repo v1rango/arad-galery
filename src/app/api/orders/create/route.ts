@@ -4,11 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { generateOrderNumber } from "@/lib/orderHelpers";
 import { getSettings } from "@/lib/settings";
 import { requestPayment } from "@/lib/zarinpal";
-import {
-  notifyNewOrder,
-  notifyLowStock,
-  notifyOutOfStock,
-} from "@/lib/notifications";
+import { notifyNewOrder } from "@/lib/notifications";
 
 type CartItemInput = {
   productId: string;
@@ -29,7 +25,6 @@ export async function POST(request: NextRequest) {
     const settings = await getSettings();
     const SHIPPING_COST = settings.shippingCost;
     const FREE_SHIPPING_THRESHOLD = settings.freeShippingThreshold;
-    const LOW_STOCK_THRESHOLD = settings.lowStockThreshold;
 
     const user = await getCurrentUser();
     if (!user) {
@@ -44,10 +39,12 @@ export async function POST(request: NextRequest) {
       items,
       address,
       customerNote,
+      couponCode,
     }: {
       items: CartItemInput[];
       address: AddressInput;
       customerNote?: string;
+      couponCode?: string;
     } = body;
 
     if (!items || items.length === 0) {
@@ -121,117 +118,156 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-    const totalAmount = subtotal + shippingCost;
+    let discountAmount = 0;
+    let validCouponId: string | null = null;
+    let validCouponCode: string | null = null;
 
-    const result = await prisma.$transaction(async (tx) => {
-      const savedAddress = await tx.address.create({
-        data: {
-          userId: user.id,
-          fullName: address.fullName,
-          phone: address.phone,
-          province: address.province,
-          city: address.city,
-          address: address.address,
-          postalCode: address.postalCode,
-        },
+    if (couponCode && couponCode.trim()) {
+      const normalizedCode = couponCode.trim().toUpperCase();
+      const coupon = await prisma.coupon.findUnique({
+        where: { code: normalizedCode },
       });
 
-      const order = await tx.order.create({
-        data: {
-          orderNumber: generateOrderNumber(),
-          userId: user.id,
-          addressId: savedAddress.id,
-          subtotal,
-          shippingCost,
-          totalAmount,
-          customerNote: customerNote || null,
-          items: {
-            create: orderItemsData,
-          },
-        },
-        include: {
-          items: true,
-        },
-      });
-
-      const stockUpdates: Array<{
-        productId: string;
-        title: string;
-        newStock: number;
-        wasAboveThreshold: boolean;
-      }> = [];
-
-      for (const item of items) {
-        const product = products.find((p) => p.id === item.productId)!;
-        const newStock = product.stockCount - item.quantity;
-
-        await tx.product.update({
-          where: { id: product.id },
-          data: {
-            stockCount: newStock,
-            inStock: newStock > 0,
-          },
-        });
-
-        stockUpdates.push({
-          productId: product.id,
-          title: product.title,
-          newStock,
-          wasAboveThreshold: product.stockCount > LOW_STOCK_THRESHOLD,
-        });
+      if (!coupon) {
+        return NextResponse.json(
+          { success: false, error: "کد تخفیف نامعتبر است" },
+          { status: 400 }
+        );
       }
 
-      return { order, stockUpdates };
+      if (!coupon.isActive) {
+        return NextResponse.json(
+          { success: false, error: "این کد تخفیف غیرفعال است" },
+          { status: 400 }
+        );
+      }
+
+      const now = new Date();
+
+      if (coupon.startsAt > now) {
+        return NextResponse.json(
+          { success: false, error: "این کد تخفیف هنوز فعال نشده است" },
+          { status: 400 }
+        );
+      }
+
+      if (coupon.expiresAt && coupon.expiresAt < now) {
+        return NextResponse.json(
+          { success: false, error: "این کد تخفیف منقضی شده است" },
+          { status: 400 }
+        );
+      }
+
+      if (coupon.usageLimit !== null && coupon.usageCount >= coupon.usageLimit) {
+        return NextResponse.json(
+          { success: false, error: "ظرفیت این کد تخفیف به پایان رسیده" },
+          { status: 400 }
+        );
+      }
+
+      const userUsageCount = await prisma.couponUsage.count({
+        where: {
+          couponId: coupon.id,
+          userId: user.id,
+        },
+      });
+
+      if (userUsageCount >= coupon.perUserLimit) {
+        return NextResponse.json(
+          { success: false, error: "شما قبلاً از این کد تخفیف استفاده کرده‌اید" },
+          { status: 400 }
+        );
+      }
+
+      if (subtotal < coupon.minOrderAmount) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `حداقل مبلغ سفارش برای این کد ${coupon.minOrderAmount.toLocaleString("fa-IR")} تومان است`,
+          },
+          { status: 400 }
+        );
+      }
+
+      if (coupon.discountType === "PERCENTAGE") {
+        discountAmount = Math.floor((subtotal * coupon.discountValue) / 100);
+        if (coupon.maxDiscountAmount && discountAmount > coupon.maxDiscountAmount) {
+          discountAmount = coupon.maxDiscountAmount;
+        }
+      } else {
+        discountAmount = coupon.discountValue;
+        if (discountAmount > subtotal) {
+          discountAmount = subtotal;
+        }
+      }
+
+      validCouponId = coupon.id;
+      validCouponCode = coupon.code;
+    }
+
+    const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+    const totalAmount = Math.max(0, subtotal - discountAmount + shippingCost);
+
+    const savedAddress = await prisma.address.create({
+      data: {
+        userId: user.id,
+        fullName: address.fullName,
+        phone: address.phone,
+        province: address.province,
+        city: address.city,
+        address: address.address,
+        postalCode: address.postalCode,
+      },
+    });
+
+    const order = await prisma.order.create({
+      data: {
+        orderNumber: generateOrderNumber(),
+        userId: user.id,
+        addressId: savedAddress.id,
+        subtotal,
+        shippingCost,
+        discountAmount,
+        totalAmount,
+        couponCode: validCouponCode,
+        couponId: validCouponId,
+        customerNote: customerNote || null,
+        items: {
+          create: orderItemsData,
+        },
+      },
+      include: {
+        items: true,
+      },
     });
 
     const customerName = user.name || user.phone;
-    await notifyNewOrder(
-      result.order.id,
-      customerName,
-      result.order.totalAmount
-    );
-
-    for (const update of result.stockUpdates) {
-      if (update.newStock === 0) {
-        await notifyOutOfStock(update.title, update.productId);
-      } else if (
-        update.newStock > 0 &&
-        update.newStock <= LOW_STOCK_THRESHOLD &&
-        update.wasAboveThreshold
-      ) {
-        await notifyLowStock(
-          update.title,
-          update.productId,
-          update.newStock
-        );
-      }
-    }
+    await notifyNewOrder(order.id, customerName, order.totalAmount);
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const callbackUrl = `${appUrl}/api/payment/callback?orderId=${result.order.id}`;
+    const callbackUrl = `${appUrl}/api/payment/callback?orderId=${order.id}`;
 
-    const paymentAmount = result.order.totalAmount * 10;
+    const paymentAmount = order.totalAmount * 10;
 
     const paymentRequest = await requestPayment({
       amount: paymentAmount,
-      description: `پرداخت سفارش ${result.order.orderNumber}`,
+      description: `پرداخت سفارش ${order.orderNumber}`,
       callbackUrl,
       mobile: user.phone,
     });
 
     if (paymentRequest.success && paymentRequest.authority) {
       await prisma.order.update({
-        where: { id: result.order.id },
+        where: { id: order.id },
         data: { paymentRef: paymentRequest.authority },
       });
 
       return NextResponse.json({
         success: true,
         data: {
-          orderId: result.order.id,
-          orderNumber: result.order.orderNumber,
-          totalAmount: result.order.totalAmount,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          totalAmount: order.totalAmount,
           paymentUrl: paymentRequest.paymentUrl,
         },
         message: "در حال انتقال به درگاه پرداخت",
@@ -241,9 +277,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        orderId: result.order.id,
-        orderNumber: result.order.orderNumber,
-        totalAmount: result.order.totalAmount,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        totalAmount: order.totalAmount,
         paymentError: paymentRequest.error,
       },
       message: "سفارش ثبت شد ولی خطا در اتصال به درگاه پرداخت",

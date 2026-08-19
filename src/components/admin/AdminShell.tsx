@@ -15,6 +15,7 @@ import {
   LogOut,
   Home,
   Settings,
+  Tag,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import toast from "react-hot-toast";
@@ -35,6 +36,7 @@ const menuItems = [
   { href: "/admin/products", label: "محصولات", icon: Package },
   { href: "/admin/categories", label: "دسته‌بندی‌ها", icon: Tags },
   { href: "/admin/orders", label: "سفارش‌ها", icon: ShoppingBag },
+  { href: "/admin/coupons", label: "کدهای تخفیف", icon: Tag },
   { href: "/admin/users", label: "کاربران", icon: Users },
   { href: "/admin/notifications", label: "نوتیفیکیشن‌ها", icon: Bell },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings },
@@ -60,7 +62,7 @@ export default function AdminShell({ user, children }: Props) {
         <div className="p-5 border-b border-royal-500/10">
           <Link href="/admin" className="flex items-center gap-2">
             <div className="relative w-10 h-10 shrink-0 rounded-full overflow-hidden">
-            <Logo size={40} />
+              <Logo size={40} />
             </div>
             <div>
               <div className="text-sm font-black bg-gradient-to-l from-royal-500 to-blush-500 bg-clip-text text-transparent">
@@ -128,7 +130,7 @@ export default function AdminShell({ user, children }: Props) {
                 className="flex items-center gap-2"
               >
                 <div className="relative w-10 h-10 shrink-0 rounded-full overflow-hidden">
-                <Logo size={40} />
+                  <Logo size={40} />
                 </div>
                 <div>
                   <div className="text-sm font-black bg-gradient-to-l from-royal-500 to-blush-500 bg-clip-text text-transparent">
@@ -202,7 +204,7 @@ export default function AdminShell({ user, children }: Props) {
 
             <div className="lg:hidden flex items-center gap-2">
               <div className="relative w-8 h-8 shrink-0 rounded-full overflow-hidden">
-              <Logo size={40} />
+                <Logo size={40} />
               </div>
               <span className="text-sm font-black bg-gradient-to-l from-royal-500 to-blush-500 bg-clip-text text-transparent">
                 پنل ادمین

@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   Truck,
   CheckCircle,
+  Tag,
 } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -32,6 +33,7 @@ export default function CheckoutPage() {
 
   const items = useCartStore((state) => state.items);
   const totalPrice = useCartStore((state) => state.getTotalPrice());
+  const appliedCoupon = useCartStore((state) => state.appliedCoupon);
   const clearCart = useCartStore((state) => state.clearCart);
   const user = useAuthStore((state) => state.user);
 
@@ -85,7 +87,8 @@ export default function CheckoutPage() {
   const SHIPPING_COST = shippingSettings.shippingCost;
   const FREE_SHIPPING_THRESHOLD = shippingSettings.freeShippingThreshold;
   const shippingCost = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-  const finalPrice = totalPrice + shippingCost;
+  const couponDiscount = appliedCoupon?.discountAmount || 0;
+  const finalPrice = Math.max(0, totalPrice - couponDiscount + shippingCost);
 
   const validateAddress = (): boolean => {
     if (!address.fullName.trim()) {
@@ -155,22 +158,22 @@ export default function CheckoutPage() {
           })),
           address,
           customerNote: customerNote.trim() || undefined,
+          couponCode: appliedCoupon?.code || undefined,
         }),
       });
 
       const data = await res.json();
 
-if (data.success) {
-  if (data.data.paymentUrl) {
-    toast.success("در حال انتقال به درگاه پرداخت...", { id: "submit" });
-    clearCart();
-    window.location.href = data.data.paymentUrl;
-  } else {
-    toast.success("سفارش ثبت شد! ✨", { id: "submit" });
-    clearCart();
-    router.push(`/checkout/success?order=${data.data.orderNumber}`);
-  }
-
+      if (data.success) {
+        if (data.data.paymentUrl) {
+          toast.success("در حال انتقال به درگاه پرداخت...", { id: "submit" });
+          clearCart();
+          window.location.href = data.data.paymentUrl;
+        } else {
+          toast.success("سفارش ثبت شد! ✨", { id: "submit" });
+          clearCart();
+          router.push(`/checkout/success?order=${data.data.orderNumber}`);
+        }
       } else {
         toast.error(data.error || "خطا در ثبت سفارش", { id: "submit" });
       }
@@ -326,6 +329,18 @@ if (data.success) {
                   {formatPrice(totalPrice)} تومان
                 </span>
               </div>
+
+              {appliedCoupon && couponDiscount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-1 text-green-600">
+                    <Tag size={14} />
+                    <span>کد تخفیف ({appliedCoupon.code})</span>
+                  </div>
+                  <span className="font-bold text-green-600">
+                    {formatPrice(couponDiscount)}-
+                  </span>
+                </div>
+              )}
 
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">

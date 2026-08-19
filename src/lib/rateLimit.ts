@@ -1,18 +1,4 @@
-type RateLimitEntry = {
-  count: number;
-  resetAt: number;
-};
-
-const rateLimitMap = new Map<string, RateLimitEntry>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitMap.entries()) {
-    if (entry.resetAt < now) {
-      rateLimitMap.delete(key);
-    }
-  }
-}, 60000);
+import { prisma } from "./prisma";
 
 export type RateLimitResult = {
   success: boolean;
@@ -20,42 +6,66 @@ export type RateLimitResult = {
   resetIn: number;
 };
 
-export function rateLimit(
+export async function rateLimit(
   identifier: string,
   maxRequests: number,
   windowMs: number
-): RateLimitResult {
-  const now = Date.now();
-  const entry = rateLimitMap.get(identifier);
+): Promise<RateLimitResult> {
+  const now = new Date();
 
-  if (!entry || entry.resetAt < now) {
-    rateLimitMap.set(identifier, {
-      count: 1,
-      resetAt: now + windowMs,
+  try {
+    const existing = await prisma.rateLimit.findUnique({
+      where: { identifier },
     });
+
+    if (!existing || existing.resetAt < now) {
+      const resetAt = new Date(now.getTime() + windowMs);
+      await prisma.rateLimit.upsert({
+        where: { identifier },
+        create: {
+          identifier,
+          count: 1,
+          resetAt,
+        },
+        update: {
+          count: 1,
+          resetAt,
+        },
+      });
+
+      return {
+        success: true,
+        remaining: maxRequests - 1,
+        resetIn: windowMs,
+      };
+    }
+
+    if (existing.count >= maxRequests) {
+      return {
+        success: false,
+        remaining: 0,
+        resetIn: existing.resetAt.getTime() - now.getTime(),
+      };
+    }
+
+    const updated = await prisma.rateLimit.update({
+      where: { identifier },
+      data: { count: { increment: 1 } },
+    });
+
     return {
       success: true,
-      remaining: maxRequests - 1,
+      remaining: maxRequests - updated.count,
+      resetIn: existing.resetAt.getTime() - now.getTime(),
+    };
+  } catch (error) {
+    console.error("خطای Rate Limit:", error);
+    return {
+      success: true,
+      remaining: maxRequests,
       resetIn: windowMs,
     };
   }
-
-  if (entry.count >= maxRequests) {
-    return {
-      success: false,
-      remaining: 0,
-      resetIn: entry.resetAt - now,
-    };
-  }
-
-  entry.count += 1;
-  rateLimitMap.set(identifier, entry);
-
-  return {
-    success: true,
-    remaining: maxRequests - entry.count,
-    resetIn: entry.resetAt - now,
-  };
 }
 
 export function getClientIp(request: Request): string {
@@ -70,4 +80,18 @@ export function getClientIp(request: Request): string {
   }
 
   return "unknown";
+}
+
+export async function cleanupExpiredRateLimits(): Promise<number> {
+  try {
+    const result = await prisma.rateLimit.deleteMany({
+      where: {
+        resetAt: { lt: new Date() },
+      },
+    });
+    return result.count;
+  } catch (error) {
+    console.error("خطای پاک‌سازی Rate Limit:", error);
+    return 0;
+  }
 }

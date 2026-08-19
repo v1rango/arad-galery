@@ -7,22 +7,37 @@ export type CartItem = {
   quantity: number;
 };
 
+export type AppliedCoupon = {
+  code: string;
+  couponId: string;
+  discountType: "PERCENTAGE" | "FIXED";
+  discountValue: number;
+  discountAmount: number;
+  description?: string | null;
+};
+
 type CartStore = {
   items: CartItem[];
+  appliedCoupon: AppliedCoupon | null;
   addItem: (product: Product, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  applyCoupon: (coupon: AppliedCoupon) => void;
+  removeCoupon: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
   getTotalDiscount: () => number;
   getOriginalTotal: () => number;
+  getCouponDiscount: () => number;
+  getFinalPrice: (shippingCost: number) => number;
 };
 
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      appliedCoupon: null,
 
       addItem: (product, quantity = 1) => {
         set((state) => {
@@ -40,6 +55,7 @@ export const useCartStore = create<CartStore>()(
                   ? { ...item, quantity: newQty }
                   : item
               ),
+              appliedCoupon: null,
             };
           }
 
@@ -48,6 +64,7 @@ export const useCartStore = create<CartStore>()(
               ...state.items,
               { product, quantity: Math.min(quantity, maxQty) },
             ],
+            appliedCoupon: null,
           };
         });
       },
@@ -55,6 +72,7 @@ export const useCartStore = create<CartStore>()(
       removeItem: (productId) => {
         set((state) => ({
           items: state.items.filter((item) => item.product.id !== productId),
+          appliedCoupon: null,
         }));
       },
 
@@ -65,6 +83,7 @@ export const useCartStore = create<CartStore>()(
               items: state.items.filter(
                 (item) => item.product.id !== productId
               ),
+              appliedCoupon: null,
             };
           }
 
@@ -76,12 +95,21 @@ export const useCartStore = create<CartStore>()(
               }
               return item;
             }),
+            appliedCoupon: null,
           };
         });
       },
 
       clearCart: () => {
-        set({ items: [] });
+        set({ items: [], appliedCoupon: null });
+      },
+
+      applyCoupon: (coupon) => {
+        set({ appliedCoupon: coupon });
+      },
+
+      removeCoupon: () => {
+        set({ appliedCoupon: null });
       },
 
       getTotalItems: () => {
@@ -105,6 +133,17 @@ export const useCartStore = create<CartStore>()(
         const original = get().getOriginalTotal();
         const final = get().getTotalPrice();
         return original - final;
+      },
+
+      getCouponDiscount: () => {
+        const coupon = get().appliedCoupon;
+        return coupon ? coupon.discountAmount : 0;
+      },
+
+      getFinalPrice: (shippingCost: number) => {
+        const subtotal = get().getTotalPrice();
+        const couponDiscount = get().getCouponDiscount();
+        return Math.max(0, subtotal - couponDiscount + shippingCost);
       },
     }),
     {

@@ -9,16 +9,68 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 async function getHomeProducts() {
-  const bestSellers = await prisma.product.findMany({
-    where: { isActive: true },
-    include: {
-      category: true,
-      images: { orderBy: { order: "asc" } },
-      specs: { orderBy: { order: "asc" } },
+  const topSellingItems = await prisma.orderItem.groupBy({
+    by: ["productId"],
+    where: {
+      order: {
+        paymentStatus: "PAID",
+      },
     },
-    orderBy: { stockCount: "desc" },
+    _sum: {
+      quantity: true,
+    },
+    orderBy: {
+      _sum: {
+        quantity: "desc",
+      },
+    },
     take: 4,
   });
+
+  const bestSellerIds = topSellingItems.map((item) => item.productId);
+
+  let bestSellers: Product[] = [];
+
+  if (bestSellerIds.length > 0) {
+    const bestSellerProducts = await prisma.product.findMany({
+      where: {
+        id: { in: bestSellerIds },
+        isActive: true,
+      },
+      include: {
+        category: true,
+        images: { orderBy: { order: "asc" } },
+        specs: { orderBy: { order: "asc" } },
+      },
+    });
+
+    bestSellers = bestSellerIds
+      .map((id) => bestSellerProducts.find((p) => p.id === id))
+      .filter((p): p is (typeof bestSellerProducts)[number] => p !== undefined)
+      .map((p) => JSON.parse(JSON.stringify(p)) as Product);
+  }
+
+  if (bestSellers.length < 4) {
+    const remaining = 4 - bestSellers.length;
+    const existingIds = bestSellers.map((p) => p.id);
+
+    const fallbackProducts = await prisma.product.findMany({
+      where: {
+        isActive: true,
+        id: { notIn: existingIds },
+      },
+      include: {
+        category: true,
+        images: { orderBy: { order: "asc" } },
+        specs: { orderBy: { order: "asc" } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: remaining,
+    });
+
+    const fallbackParsed = JSON.parse(JSON.stringify(fallbackProducts)) as Product[];
+    bestSellers = [...bestSellers, ...fallbackParsed];
+  }
 
   const newArrivals = await prisma.product.findMany({
     where: { isActive: true },
@@ -32,7 +84,7 @@ async function getHomeProducts() {
   });
 
   return {
-    bestSellers: JSON.parse(JSON.stringify(bestSellers)) as Product[],
+    bestSellers,
     newArrivals: JSON.parse(JSON.stringify(newArrivals)) as Product[],
   };
 }
