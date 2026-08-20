@@ -16,7 +16,6 @@ export async function GET() {
       where: { userId: user.id },
       include: {
         items: true,
-        address: true,
       },
       orderBy: { createdAt: "desc" },
     });

@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   },
   description:
     "خرید آنلاین لوازم آرایشی و بهداشتی اورجینال از برندهای معتبر جهانی مثل MAC، Maybelline، L'Oreal، NARS. آراد گالری با ضمانت اصالت کالا، ارسال سریع به سراسر ایران و قیمت مناسب.",
+  icons: {
+    icon: "/images/logo-light.webp",
+    shortcut: "/images/logo-light.webp",
+    apple: "/images/logo-light.webp",
+  },
   keywords: [
     "لوازم آرایشی",
     "لوازم بهداشتی",

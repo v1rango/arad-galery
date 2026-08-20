@@ -5,144 +5,100 @@
 @theme {
   --font-sans: "Vazirmatn", sans-serif;
 
-  --color-royal-500: #7c3aed;   
+  /* پالت رنگی اختصاصی و لوکس آراد گالری */
+  --color-royal-50: #f5f3ff;
+  --color-royal-100: #ede9fe;
+  --color-royal-500: #7c3aed; 
   --color-royal-600: #6d28d9;
   --color-royal-700: #5b21b6;
 
-  --color-blush-500: #ec4899;   
+  --color-blush-50: #fdf2f8;
+  --color-blush-100: #fce7f3;
+  --color-blush-500: #ec4899; 
   --color-blush-600: #db2777;
+
+  /* رنگ‌های لوکس رزگلدی و نود */
+  --color-rose-gold: #e0a96d;
+  --color-nude-bg: #faf7f5;
 }
 
 html {
   direction: rtl;
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: white;
-  color: black;
+  background-color: #fcfcfd;
+  color: #1e1b4b;
   line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
 }
 
 .dark body {
-  background-color: black;
-  color: white;
-}
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  background-color: #09090b;
+  color: #f4f4f5;
 }
 
-@keyframes spin-reverse {
-  from {
-    transform: rotate(360deg);
-  }
-  to {
-    transform: rotate(0deg);
-  }
+/* افکت‌های شیشه‌ای مدرن (Glassmorphism) */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-effect {
+  background: rgba(18, 18, 23, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* سایه‌های نرم اختصاصی برای کارت‌ها */
+.luxury-shadow {
+  box-shadow: 0 10px 30px -10px rgba(124, 58, 237, 0.12);
+}
+
+.dark .luxury-shadow {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* انیمیشن‌ها */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.1);
-  }
-}
-
-@keyframes pulse-scale {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.08); }
 }
 
 @keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes bounce-dot {
-  0%, 80%, 100% {
-    transform: translateY(0);
-    opacity: 0.5;
-  }
-  40% {
-    transform: translateY(-10px);
-    opacity: 1;
-  }
-}
+.animate-spin-slow { animation: spin-slow 8s linear infinite; }
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-fade-in-up { animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
 
-.animate-spin-slow {
-  animation: spin-slow 3s linear infinite;
+/* سفارشی‌سازی اسکرول‌بار */
+::-webkit-scrollbar {
+  width: 8px;
 }
-
-.animate-spin-reverse {
-  animation: spin-reverse 2s linear infinite;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
 }
-
-.animate-pulse-scale {
-  animation: pulse-scale 2s ease-in-out infinite;
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out;
-}
-
-.animate-bounce-dot {
-  animation: bounce-dot 1.4s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-spin-slow,
-  .animate-spin-reverse,
-  .animate-pulse-glow,
-  .animate-pulse-scale,
-  .animate-fade-in-up,
-  .animate-bounce-dot {
-    animation: none;
-  }
-}
-@keyframes icon-spin {
-  0%, 100% {
-    transform: rotate(0deg) scale(1);
-  }
-  25% {
-    transform: rotate(90deg) scale(1.1);
-  }
-  50% {
-    transform: rotate(180deg) scale(1);
-  }
-  75% {
-    transform: rotate(270deg) scale(1.1);
-  }
-}
-
-.animate-icon-spin {
-  animation: icon-spin 3s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-icon-spin {
-    animation: none;
-  }
+.dark ::-webkit-scrollbar-thumb {
+  background: #27272a;
 }

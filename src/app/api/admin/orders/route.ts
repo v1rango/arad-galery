@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         items: true,
-        address: true,
         user: {
           select: {
             id: true,

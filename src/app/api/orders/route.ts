@@ -122,23 +122,16 @@ export async function POST(request: NextRequest) {
     const totalAmount = subtotal + shippingCost;
 
     const result = await prisma.$transaction(async (tx) => {
-      const savedAddress = await tx.address.create({
-        data: {
-          userId: user.id,
-          fullName: address.fullName,
-          phone: address.phone,
-          province: address.province,
-          city: address.city,
-          address: address.address,
-          postalCode: address.postalCode,
-        },
-      });
-
       const order = await tx.order.create({
         data: {
           orderNumber: generateOrderNumber(),
           userId: user.id,
-          addressId: savedAddress.id,
+          shippingFullName: address.fullName,
+          shippingPhone: address.phone,
+          shippingProvince: address.province,
+          shippingCity: address.city,
+          shippingAddress: address.address,
+          shippingPostalCode: address.postalCode,
           subtotal,
           shippingCost,
           totalAmount,
