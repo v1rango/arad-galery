@@ -7,7 +7,6 @@ import "@fontsource/vazirmatn/500.css";
 import "@fontsource/vazirmatn/700.css";
 import "@fontsource/vazirmatn/900.css";
 import ThemeProvider from "@/providers/ThemeProvider";
-import SessionRedirect from "@/components/SessionRedirect";
 import OrganizationJsonLd from "@/components/seo/OrganizationJsonLd";
 
 export const metadata: Metadata = {
@@ -98,7 +97,6 @@ export default function RootLayout({
         <OrganizationJsonLd />
         <ThemeProvider>
           <AuthInitializer />
-          <SessionRedirect />
           <Toaster
             position="top-center"
             toastOptions={{
