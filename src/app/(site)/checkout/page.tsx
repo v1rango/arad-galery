@@ -46,12 +46,14 @@ export default function CheckoutPage() {
     postalCode: "",
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
+  // پیش‌فرض روی کارت به کارت
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card_to_card");
   const [customerNote, setCustomerNote] = useState("");
 
-  const [shippingSettings, setShippingSettings] = useState({
+  const [publicSettings, setPublicSettings] = useState({
     shippingCost: 50000,
     freeShippingThreshold: 2000000,
+    onlinePaymentEnabled: false,
   });
 
   useEffect(() => {
@@ -64,10 +66,16 @@ export default function CheckoutPage() {
         const res = await fetch("/api/settings");
         const data = await res.json();
         if (data.success) {
-          setShippingSettings({
-            shippingCost: data.data.shippingCost,
-            freeShippingThreshold: data.data.freeShippingThreshold,
+          const onlineEnabled = !!data.data.onlinePaymentEnabled;
+          setPublicSettings({
+            shippingCost: data.data.shippingCost ?? 50000,
+            freeShippingThreshold: data.data.freeShippingThreshold ?? 2000000,
+            onlinePaymentEnabled: onlineEnabled,
           });
+
+          if (!onlineEnabled) {
+            setPaymentMethod("card_to_card");
+          }
         }
       } catch {}
     }
@@ -84,8 +92,8 @@ export default function CheckoutPage() {
     }
   }, [mounted, user]);
 
-  const SHIPPING_COST = shippingSettings.shippingCost;
-  const FREE_SHIPPING_THRESHOLD = shippingSettings.freeShippingThreshold;
+  const SHIPPING_COST = publicSettings.shippingCost;
+  const FREE_SHIPPING_THRESHOLD = publicSettings.freeShippingThreshold;
   const shippingCost = totalPrice >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
   const couponDiscount = appliedCoupon?.discountAmount || 0;
   const finalPrice = Math.max(0, totalPrice - couponDiscount + shippingCost);
@@ -112,7 +120,7 @@ export default function CheckoutPage() {
       return false;
     }
     if (address.postalCode.length !== 10) {
-      toast.error("کد پستی باید 10 رقم باشد");
+      toast.error("کد پستی باید ۱۰ رقم باشد");
       return false;
     }
     return true;
@@ -159,27 +167,37 @@ export default function CheckoutPage() {
           address,
           customerNote: customerNote.trim() || undefined,
           couponCode: appliedCoupon?.code || undefined,
+          paymentMethod:
+            paymentMethod === "card_to_card" ? "CARD_TO_CARD" : "ONLINE",
         }),
       });
 
       const data = await res.json();
 
       if (data.success) {
+        const orderNum = data.data.orderNumber;
+        clearCart();
+
         if (data.data.paymentUrl) {
+          // پرداخت آنلاین
           toast.success("در حال انتقال به درگاه پرداخت...", { id: "submit" });
-          clearCart();
           window.location.href = data.data.paymentUrl;
+        } else if (data.data.paymentMethod === "CARD_TO_CARD") {
+          // کارت به کارت
+          toast.success("سفارش ثبت شد. لطفاً رسید را ارسال کنید", {
+            id: "submit",
+          });
+          window.location.href = `/checkout/card-to-card?orderNumber=${orderNum}`;
         } else {
           toast.success("سفارش ثبت شد! ✨", { id: "submit" });
-          clearCart();
-          router.push(`/checkout/success?order=${data.data.orderNumber}`);
+          window.location.href = `/checkout/success?orderNumber=${orderNum}`;
         }
       } else {
         toast.error(data.error || "خطا در ثبت سفارش", { id: "submit" });
+        setIsSubmitting(false);
       }
     } catch {
       toast.error("خطا در ارتباط با سرور", { id: "submit" });
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -244,6 +262,7 @@ export default function CheckoutPage() {
             <PaymentMethods
               selected={paymentMethod}
               onSelect={setPaymentMethod}
+              onlinePaymentEnabled={publicSettings.onlinePaymentEnabled}
             />
           )}
 
@@ -274,7 +293,7 @@ export default function CheckoutPage() {
             {currentStep > 1 ? (
               <button
                 onClick={handlePrev}
-                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-royal-500/10 text-royal-500 font-bold hover:bg-royal-500/20 transition-colors"
+                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-royal-500/10 text-royal-500 font-bold hover:bg-royal-500/20 transition-colors cursor-pointer"
               >
                 <ArrowRight size={18} />
                 <span>مرحله قبل</span>
@@ -292,7 +311,7 @@ export default function CheckoutPage() {
             {currentStep < 3 ? (
               <button
                 onClick={handleNext}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-l from-royal-500 to-blush-500 text-white font-bold hover:shadow-2xl hover:shadow-royal-500/30 transition-all hover:-translate-y-0.5"
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-l from-royal-500 to-blush-500 text-white font-bold hover:shadow-2xl hover:shadow-royal-500/30 transition-all hover:-translate-y-0.5 cursor-pointer"
               >
                 <span>مرحله بعد</span>
                 <ArrowLeft size={18} />
@@ -301,7 +320,7 @@ export default function CheckoutPage() {
               <button
                 onClick={handleSubmitOrder}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-l from-royal-500 to-blush-500 text-white font-bold hover:shadow-2xl hover:shadow-royal-500/30 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-l from-royal-500 to-blush-500 text-white font-bold hover:shadow-2xl hover:shadow-royal-500/30 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               >
                 <CheckCircle size={18} />
                 <span>

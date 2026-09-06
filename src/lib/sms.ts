@@ -29,133 +29,78 @@ function normalizePhone(phone: string): string {
 }
 
 function isAdminPhone(phone: string): boolean {
-  const normalized = normalizePhone(phone);
-  return ADMIN_PHONES_FOR_LOG.includes(normalized);
+  return ADMIN_PHONES_FOR_LOG.includes(normalizePhone(phone));
 }
 
-async function sendViaSmsIr(
+async function sendViaPanelchi(
   phone: string,
   code: string,
   apiKey: string,
-  templateId: string
+  patternCode: string,
+  customSourceNumber?: string | null
 ): Promise<SendSmsResult> {
   try {
     const normalizedPhone = normalizePhone(phone);
+    const recipient = "+98" + normalizedPhone.slice(1);
+    const cleanApiKey = apiKey.trim().replace(/^Bearer\s+/i, "");
+    const cleanPatternCode = patternCode.trim();
+    const sourceNumber = (customSourceNumber || "10001").trim();
 
-    const response = await fetch("https://api.sms.ir/v1/send/verify", {
+    console.log(`📡 [Panelchi API] ارسال سریع OTP به ${recipient} از خط ${sourceNumber}`);
+
+    const response = await fetch("https://api.panelchi.com/sms/pattern", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
-        "x-api-key": apiKey,
+        "Authorization": `Bearer ${cleanApiKey}`,
       },
       body: JSON.stringify({
-        mobile: normalizedPhone,
-        templateId: parseInt(templateId),
-        parameters: [
-          {
-            name: "code",
-            value: code,
-          },
-        ],
+        pattern: cleanPatternCode,
+        variables: {
+          code: code.toString(),
+        },
+        recipient: recipient,
+        sourceNumber: sourceNumber,
       }),
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data: any = {};
+    try { data = JSON.parse(responseText); } catch {}
 
-    if (data.status === 1) {
-      console.log(`✅ پیامک OTP ارسال شد (SMS.ir)`);
+    if (response.ok || response.status === 201 || data?.status === "CREATED") {
+      console.log(`✅ پیامک با موفقیت ارسال شد.`);
       return { success: true };
     }
 
-    const errorMsg = data.message || "خطا در ارسال پیامک";
-    console.error("خطای SMS.ir:", errorMsg, data);
-    return { success: false, error: errorMsg };
-  } catch (error) {
-    console.error("خطای شبکه در ارسال پیامک SMS.ir:", error);
-    return { success: false, error: "خطا در ارتباط با سرویس پیامک" };
-  }
-}
-
-async function sendViaKavenegar(
-  phone: string,
-  code: string,
-  apiKey: string,
-  sender?: string | null
-): Promise<SendSmsResult> {
-  try {
-    const senderNumber = sender || "10004346";
-    const message = `کد تایید آراد گالری:\n${code}\nاین کد تا ۲ دقیقه معتبر است.`;
-
-    const url = `https://api.kavenegar.com/v1/${apiKey}/sms/send.json`;
-    const params = new URLSearchParams({
-      receptor: phone,
-      sender: senderNumber,
-      message,
-    });
-
-    const res = await fetch(`${url}?${params.toString()}`);
-    const data = await res.json();
-
-    if (data.return && data.return.status === 200) {
-      console.log(`✅ پیامک ارسال شد (کاوه‌نگار)`);
-      return { success: true };
-    }
-
-    const errorMsg = data.return?.message || "خطا در ارسال پیامک";
-    console.error("خطای کاوه‌نگار:", errorMsg);
-    return { success: false, error: errorMsg };
-  } catch (error) {
-    console.error("خطای شبکه در ارسال پیامک کاوه‌نگار:", error);
-    return { success: false, error: "خطا در ارتباط با سرویس پیامک" };
+    console.error("❌ خطای ارسال پیامک پنل‌چی:", responseText);
+    return { success: false, error: responseText };
+  } catch (err: any) {
+    console.error("❌ خطای شبکه:", err.message);
+    return { success: false, error: err.message };
   }
 }
 
 export async function sendOtpSms({ phone, code }: SendOtpParams): Promise<SendSmsResult> {
   const settings = await getSettings();
 
-  const hasSmsIrConfig = !!(settings.smsApiKey && settings.smsTemplateId);
-  const hasKavenegarConfig = !!settings.kavenegarApiKey;
-  const hasAnyConfig = hasSmsIrConfig || hasKavenegarConfig;
+  const apiKey = (settings.ippanelApiKey || process.env.IPPANEL_API_KEY || "").trim();
+  const patternCode = (settings.ippanelPatternCode || process.env.IPPANEL_PATTERN_CODE || "46qd0").trim();
+  const originator = (settings.ippanelSenderNumber || settings.ippanelOriginator || process.env.IPPANEL_ORIGINATOR || "10001").trim();
+
+  const hasConfig = !!(apiKey && patternCode);
 
   if (process.env.NODE_ENV === "development") {
-    console.log("═══════════════════════════════════════");
-    console.log(`📱 [DEV] کد تایید برای ${phone}: ${code}`);
-    console.log(`⏰ اعتبار: 2 دقیقه`);
-    console.log("═══════════════════════════════════════");
+    console.log(`📱 [DEV] OTP ${phone}: ${code}`);
   }
 
   if (process.env.NODE_ENV === "production" && isAdminPhone(phone)) {
-    console.log("═══════════════════════════════════════");
-    console.log(`🔐 [ADMIN] کد تایید برای ${phone}: ${code}`);
-    console.log(`⏰ اعتبار: 2 دقیقه`);
-    console.log("═══════════════════════════════════════");
+    console.log(`🔐 [ADMIN] OTP ${phone}: ${code}`);
   }
 
-  if (!settings.smsEnabled || !hasAnyConfig) {
-    if (process.env.NODE_ENV === "production" && !isAdminPhone(phone)) {
-      console.warn(`⚠️ SMS غیرفعال - کد ارسال نشد`);
-    }
+  if (!settings.smsEnabled || !hasConfig) {
     return { success: true, logged: true };
   }
 
-  const provider = settings.smsProvider || "smsir";
-
-  if (provider === "smsir" && hasSmsIrConfig) {
-    return sendViaSmsIr(phone, code, settings.smsApiKey!, settings.smsTemplateId!);
-  }
-
-  if (provider === "kavenegar" && hasKavenegarConfig) {
-    return sendViaKavenegar(phone, code, settings.kavenegarApiKey!, settings.kavenegarSenderNumber);
-  }
-
-  if (hasSmsIrConfig) {
-    return sendViaSmsIr(phone, code, settings.smsApiKey!, settings.smsTemplateId!);
-  }
-
-  if (hasKavenegarConfig) {
-    return sendViaKavenegar(phone, code, settings.kavenegarApiKey!, settings.kavenegarSenderNumber);
-  }
-
-  return { success: false, error: "هیچ سرویس پیامکی تنظیم نشده" };
+  return sendViaPanelchi(phone, code, apiKey, patternCode, originator);
 }

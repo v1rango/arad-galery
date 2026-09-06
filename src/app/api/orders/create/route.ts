@@ -5,6 +5,7 @@ import { generateOrderNumber } from "@/lib/orderHelpers";
 import { getSettings } from "@/lib/settings";
 import { requestPayment } from "@/lib/zarinpal";
 import { notifyNewOrder } from "@/lib/notifications";
+import { randomBytes } from "crypto";
 
 type CartItemInput = {
   productId: string;
@@ -40,11 +41,13 @@ export async function POST(request: NextRequest) {
       address,
       customerNote,
       couponCode,
+      paymentMethod = "ONLINE",
     }: {
       items: CartItemInput[];
       address: AddressInput;
       customerNote?: string;
       couponCode?: string;
+      paymentMethod?: "ONLINE" | "CARD_TO_CARD";
     } = body;
 
     if (!items || items.length === 0) {
@@ -208,6 +211,9 @@ export async function POST(request: NextRequest) {
     const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
     const totalAmount = Math.max(0, subtotal - discountAmount + shippingCost);
 
+    const isCardToCard = paymentMethod === "CARD_TO_CARD";
+    const receiptToken = isCardToCard ? randomBytes(32).toString("hex") : null;
+
     const order = await prisma.order.create({
       data: {
         orderNumber: generateOrderNumber(),
@@ -225,6 +231,9 @@ export async function POST(request: NextRequest) {
         couponCode: validCouponCode,
         couponId: validCouponId,
         customerNote: customerNote || null,
+        paymentMethod: isCardToCard ? "CARD_TO_CARD" : "ONLINE",
+        paymentStatus: isCardToCard ? "AWAITING_RECEIPT" : "PENDING",
+        receiptToken,
         items: {
           create: orderItemsData,
         },
@@ -237,6 +246,21 @@ export async function POST(request: NextRequest) {
     const customerName = user.name || user.phone;
     await notifyNewOrder(order.id, customerName, order.totalAmount);
 
+    // ——— کارت به کارت ———
+    if (isCardToCard) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          totalAmount: order.totalAmount,
+          paymentMethod: "CARD_TO_CARD",
+        },
+        message: "سفارش ثبت شد. لطفاً رسید پرداخت را ارسال کنید",
+      });
+    }
+
+    // ——— پرداخت آنلاین (زرین‌پال) ———
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const callbackUrl = `${appUrl}/api/payment/callback?orderId=${order.id}`;
 
@@ -262,6 +286,7 @@ export async function POST(request: NextRequest) {
           orderNumber: order.orderNumber,
           totalAmount: order.totalAmount,
           paymentUrl: paymentRequest.paymentUrl,
+          paymentMethod: "ONLINE",
         },
         message: "در حال انتقال به درگاه پرداخت",
       });
@@ -274,6 +299,7 @@ export async function POST(request: NextRequest) {
         orderNumber: order.orderNumber,
         totalAmount: order.totalAmount,
         paymentError: paymentRequest.error,
+        paymentMethod: "ONLINE",
       },
       message: "سفارش ثبت شد ولی خطا در اتصال به درگاه پرداخت",
     });

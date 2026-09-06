@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import ProductCard from "@/components/product/ProductCard";
 import ProductFilters from "@/components/product/ProductFilters";
 import ProductGridSkeleton from "@/components/product/ProductGridSkeleton";
-import { PackageSearch, Plus, Check } from "lucide-react";
+import { PackageSearch, Plus, Check, ChevronLeft } from "lucide-react";
 import { Product, CategoryWithChildren } from "@/types/product";
 import { fetchProducts, fetchCategories, PaginationInfo } from "@/lib/api";
 
@@ -29,14 +29,19 @@ function ProductsPageContent() {
   useEffect(() => {
     async function loadInitialData() {
       setIsLoading(true);
-      const [productsRes, categoriesData] = await Promise.all([
-        fetchProducts(1),
-        fetchCategories(),
-      ]);
-      setProducts(productsRes.products);
-      setPagination(productsRes.pagination);
-      setCategories(categoriesData);
-      setIsLoading(false);
+      try {
+        const [productsRes, categoriesData] = await Promise.all([
+          fetchProducts(1),
+          fetchCategories(),
+        ]);
+        setProducts(productsRes.products);
+        setPagination(productsRes.pagination);
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Error loading initial data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
     loadInitialData();
   }, []);
@@ -45,12 +50,17 @@ function ProductsPageContent() {
     if (!pagination || !pagination.hasMore || isLoadingMore) return;
 
     setIsLoadingMore(true);
-    const nextPage = pagination.page + 1;
-    const res = await fetchProducts(nextPage);
+    try {
+      const nextPage = pagination.page + 1;
+      const res = await fetchProducts(nextPage);
 
-    setProducts((prev) => [...prev, ...res.products]);
-    setPagination(res.pagination);
-    setIsLoadingMore(false);
+      setProducts((prev) => [...prev, ...res.products]);
+      setPagination(res.pagination);
+    } catch (error) {
+      console.error("Error loading more products:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   const currentCategory = categories.find((c) => c.slug === categorySlug);
@@ -112,41 +122,41 @@ function ProductsPageContent() {
   }, [search, sort, currentCategory, currentSub, products]);
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6">
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8">
+      {/* Header Section */}
+      <div className="space-y-3">
+        <nav className="flex items-center gap-2 text-xs font-bold text-zinc-400">
           <span>محصولات</span>
           {currentCategory && (
             <>
-              <span>/</span>
-              <span className="text-royal-500">{currentCategory.name}</span>
+              <ChevronLeft size={14} className="text-zinc-300 dark:text-zinc-600" />
+              <span className="text-royal-600 dark:text-royal-400">{currentCategory.name}</span>
             </>
           )}
           {currentSub && (
             <>
-              <span>/</span>
+              <ChevronLeft size={14} className="text-zinc-300 dark:text-zinc-600" />
               <span className="text-blush-500">{currentSub.name}</span>
             </>
           )}
-        </div>
+        </nav>
 
-        <h1 className="text-2xl md:text-3xl font-black">
-          <span className="bg-gradient-to-l from-royal-500 to-blush-500 bg-clip-text text-transparent">
-            {pageTitle}
-          </span>
+        <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">
+          {pageTitle}
         </h1>
 
         {!isLoading && (
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium max-w-2xl">
             {currentSub
-              ? `مجموعه‌ی کامل ${currentSub.name} از برندهای معتبر جهانی`
+              ? `مجموعه‌ی کامل ${currentSub.name} از برترین برندهای آرایشی و بهداشتی`
               : currentCategory
               ? `مشاهده و خرید محصولات ${currentCategory.name} با ضمانت اصالت کالا`
-              : "مشاهده تمام محصولات آراد گالری - لوازم آرایشی و بهداشتی اورجینال"}
+              : "مشاهده تمام محصولات آراد گالری - مرجع تخصصی آرایشی و مراقبت پوستی اورجینال"}
           </p>
         )}
       </div>
 
+      {/* Filters Bar */}
       <ProductFilters
         search={search}
         onSearchChange={setSearch}
@@ -155,25 +165,27 @@ function ProductsPageContent() {
         totalCount={filteredProducts.length}
       />
 
+      {/* Product Grid */}
       {isLoading ? (
         <ProductGridSkeleton count={12} />
       ) : filteredProducts.length > 0 ? (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+        <div className="space-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
 
+          {/* Load More Button & Stats */}
           {pagination && (
-            <div className="mt-10 flex flex-col items-center gap-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex flex-col items-center justify-center gap-4 pt-6 border-t border-zinc-100 dark:border-zinc-800/60">
+              <p className="text-xs font-bold text-zinc-400">
                 نمایش{" "}
-                <span className="font-bold text-royal-500">
+                <span className="text-zinc-900 dark:text-white">
                   {products.length.toLocaleString("fa-IR")}
                 </span>{" "}
                 از{" "}
-                <span className="font-bold text-royal-500">
+                <span className="text-zinc-900 dark:text-white">
                   {pagination.total.toLocaleString("fa-IR")}
                 </span>{" "}
                 محصول
@@ -183,11 +195,11 @@ function ProductsPageContent() {
                 <button
                   onClick={handleLoadMore}
                   disabled={isLoadingMore}
-                  className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-gradient-to-l from-royal-500 to-blush-500 text-white font-bold hover:shadow-2xl hover:shadow-royal-500/30 transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-gradient-to-tr from-royal-600 via-royal-500 to-blush-500 text-white text-sm font-black hover:shadow-lg hover:shadow-royal-500/25 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   {isLoadingMore ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       <span>در حال بارگذاری...</span>
                     </>
                   ) : (
@@ -199,25 +211,26 @@ function ProductsPageContent() {
                 </button>
               ) : (
                 products.length > 0 && (
-                  <div className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-green-500/10 text-green-600 dark:text-green-500 font-medium text-sm">
-                    <Check size={18} />
-                    <span>همه‌ی محصولات نمایش داده شدند</span>
+                  <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                    <Check size={16} />
+                    <span>همه‌ی محصولات مشاهده شدند</span>
                   </div>
                 )
               )}
             </div>
           )}
-        </>
+        </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-20 h-20 rounded-full bg-royal-500/10 flex items-center justify-center mb-4">
-            <PackageSearch size={40} className="text-royal-500" />
+        /* Empty State */
+        <div className="flex flex-col items-center justify-center py-24 text-center rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-dashed border-zinc-200 dark:border-zinc-800">
+          <div className="w-16 h-16 rounded-2xl bg-royal-500/10 flex items-center justify-center mb-4 text-royal-500">
+            <PackageSearch size={32} />
           </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-base font-black text-zinc-900 dark:text-white mb-1">
             محصولی یافت نشد
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 text-sm">
-            لطفاً کلمه دیگری جستجو کنید یا دسته‌بندی را تغییر دهید
+          <p className="text-xs text-zinc-400 max-w-sm font-medium">
+            نتیجه‌ای متناسب با فیلترهای انتخابی شما پیدا نشد. عبارت دیگری را جستجو کنید.
           </p>
         </div>
       )}
@@ -227,7 +240,13 @@ function ProductsPageContent() {
 
 export default function ProductsPage() {
   return (
-    <Suspense fallback={<div className="p-8">در حال بارگذاری...</div>}>
+    <Suspense
+      fallback={
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <ProductGridSkeleton count={8} />
+        </div>
+      }
+    >
       <ProductsPageContent />
     </Suspense>
   );

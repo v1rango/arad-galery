@@ -21,6 +21,7 @@ export type Category = {
   parentId: string | null;
   createdAt: string;
   updatedAt: string;
+  image: string | null;
 };
 
 export type Product = {

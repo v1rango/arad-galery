@@ -14,9 +14,9 @@ type Props = {
 };
 
 const paymentLabels: Record<PaymentMethod, string> = {
-  online: "پرداخت آنلاین (زرین‌پال)",
-};
-
+  ONLINE: "پرداخت آنلاین (زرین‌پال)",
+  CARD_TO_CARD: "کارت به کارت",
+} as any;
 function formatPrice(price: number): string {
   return price.toLocaleString("fa-IR");
 }

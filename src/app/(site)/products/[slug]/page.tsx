@@ -14,18 +14,19 @@ const RelatedProducts = dynamic(
   () => import("@/components/product/RelatedProducts"),
   {
     loading: () => (
-      <div className="mt-16">
+      <div className="mt-16 space-y-6">
+        <div className="h-8 w-48 bg-zinc-200 dark:bg-zinc-800 rounded-xl animate-pulse" />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="bg-white dark:bg-royal-500/5 rounded-3xl border border-royal-500/10 overflow-hidden animate-pulse"
+              className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800/80 overflow-hidden animate-pulse flex flex-col justify-between p-4 space-y-4"
             >
-              <div className="aspect-square bg-royal-500/10" />
-              <div className="p-4 space-y-2">
-                <div className="h-3 w-16 bg-royal-500/10 rounded-md" />
-                <div className="h-4 w-full bg-royal-500/10 rounded-md" />
-                <div className="h-4 w-3/4 bg-royal-500/10 rounded-md" />
+              <div className="aspect-square bg-zinc-100 dark:bg-zinc-800/60 rounded-2xl" />
+              <div className="space-y-2">
+                <div className="h-3 w-16 bg-zinc-100 dark:bg-zinc-800 rounded-md" />
+                <div className="h-4 w-full bg-zinc-100 dark:bg-zinc-800 rounded-md" />
+                <div className="h-4 w-2/3 bg-zinc-100 dark:bg-zinc-800 rounded-md" />
               </div>
             </div>
           ))}
@@ -186,37 +187,45 @@ export default async function ProductDetailPage({ params }: Props) {
   const serializedRelated = JSON.parse(JSON.stringify(relatedProducts)) as Product[];
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 space-y-10 md:space-y-14">
       <ProductJsonLd product={serializedProduct} />
 
-      <nav className="flex items-center gap-2 text-xs md:text-sm text-gray-500 mb-6 flex-wrap">
+      {/* Breadcrumb Nav */}
+      <nav className="flex items-center gap-2 text-xs font-bold text-zinc-400 flex-wrap">
         <Link
           href="/"
-          className="flex items-center gap-1 hover:text-royal-500 transition-colors"
+          className="flex items-center gap-1.5 hover:text-royal-600 dark:hover:text-royal-400 transition-colors"
         >
           <Home size={14} />
           <span>خانه</span>
         </Link>
-        <ChevronLeft size={14} className="text-gray-400" />
-        <Link href="/products" className="hover:text-royal-500 transition-colors">
+        <ChevronLeft size={14} className="text-zinc-300 dark:text-zinc-700" />
+        <Link 
+          href="/products" 
+          className="hover:text-royal-600 dark:hover:text-royal-400 transition-colors"
+        >
           محصولات
         </Link>
         {serializedProduct.category && (
           <>
-            <ChevronLeft size={14} className="text-gray-400" />
-            <span className="text-royal-500 font-medium">
+            <ChevronLeft size={14} className="text-zinc-300 dark:text-zinc-700" />
+            <Link
+              href={`/products?category=${serializedProduct.category.slug}`}
+              className="text-royal-600 dark:text-royal-400 hover:underline"
+            >
               {serializedProduct.category.name}
-            </span>
+            </Link>
           </>
         )}
-        <ChevronLeft size={14} className="text-gray-400" />
-        <span className="text-gray-700 dark:text-gray-300 font-medium line-clamp-1">
+        <ChevronLeft size={14} className="text-zinc-300 dark:text-zinc-700" />
+        <span className="text-zinc-800 dark:text-zinc-200 font-black line-clamp-1">
           {serializedProduct.title}
         </span>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 mb-12">
-        <div>
+      {/* Main Product Showcase */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-start">
+        <div className="lg:sticky lg:top-24">
           <ProductGallery
             images={serializedProduct.images.map((img) => img.url)}
             title={serializedProduct.title}
@@ -227,11 +236,15 @@ export default async function ProductDetailPage({ params }: Props) {
         </div>
       </div>
 
-      <div className="mb-12">
+      {/* Detailed Specifications & Reviews Tabs */}
+      <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800/80">
         <ProductTabs product={serializedProduct} />
       </div>
 
-      <RelatedProducts products={serializedRelated} />
+      {/* Related Products Carousel / Grid */}
+      <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800/80">
+        <RelatedProducts products={serializedRelated} />
+      </div>
     </div>
   );
 }

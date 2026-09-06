@@ -40,15 +40,19 @@ export async function PUT(request: NextRequest) {
       telegramHandle,
       whatsappNumber,
       workingHours,
+      cardNumber,
+      cardHolderName,
+      onlinePaymentEnabled,
       smsEnabled,
-      smsProvider,
-      smsApiKey,
-      smsTemplateId,
-      kavenegarApiKey,
-      kavenegarSenderNumber,
+      ippanelApiKey,
+      ippanelPatternCode,
+      ippanelSenderNumber,
+      ippanelOriginator,
     } = body;
 
     const current = await getSettings();
+
+    const senderNumber = ippanelSenderNumber?.trim() || ippanelOriginator?.trim() || null;
 
     const updated = await prisma.settings.update({
       where: { id: current.id },
@@ -64,22 +68,24 @@ export async function PUT(request: NextRequest) {
         telegramHandle: telegramHandle?.trim() || null,
         whatsappNumber: whatsappNumber?.trim() || null,
         workingHours: workingHours?.trim() || "",
+        cardNumber: cardNumber?.trim() || null,
+        cardHolderName: cardHolderName?.trim() || null,
+        onlinePaymentEnabled: !!onlinePaymentEnabled,
         smsEnabled: !!smsEnabled,
-        smsProvider: smsProvider?.trim() || "smsir",
-        smsApiKey: smsApiKey?.trim() || null,
-        smsTemplateId: smsTemplateId?.trim() || null,
-        kavenegarApiKey: kavenegarApiKey?.trim() || null,
-        kavenegarSenderNumber: kavenegarSenderNumber?.trim() || null,
+        smsProvider: "ippanel",
+        ippanelApiKey: ippanelApiKey?.trim() || null,
+        ippanelPatternCode: ippanelPatternCode?.trim() || null,
+        ippanelSenderNumber: senderNumber,
       },
     });
 
     return NextResponse.json({
       success: true,
       data: updated,
-      message: "تنظیمات ذخیره شد",
+      message: "تنظیمات با موفقیت ذخیره شد",
     });
   } catch (error) {
-    console.error("خطا:", error);
+    console.error("خطا در ذخیره تنظیمات:", error);
     return NextResponse.json(
       { success: false, error: "خطا در ذخیره تنظیمات" },
       { status: 500 }

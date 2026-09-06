@@ -5,9 +5,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = "postgresql://root:D7sU3po4QosYQsxmhREzGgFC@logan.liara.cloud:31349/postgres"
 }
-
 model User {
   id           String        @id @default(cuid())
   phone        String        @unique
@@ -38,19 +37,20 @@ model VerificationCode {
 }
 
 model Category {
-  id              String     @id @default(cuid())
-  name            String
-  slug            String     @unique
-  emoji           String?
-  seoTitle        String?
-  seoDescription  String?
-  seoKeywords     String?
-  parentId        String?
-  parent          Category?  @relation("CategoryToSubcategory", fields: [parentId], references: [id], onDelete: Cascade)
-  children        Category[] @relation("CategoryToSubcategory")
-  products        Product[]
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  emoji          String?
+  seoTitle       String?
+  image          String?
+  seoDescription String?
+  seoKeywords    String?
+  parentId       String?
+  parent         Category?  @relation("CategoryToSubcategory", fields: [parentId], references: [id], onDelete: Cascade)
+  children       Category[] @relation("CategoryToSubcategory")
+  products       Product[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
 model Product {
@@ -83,20 +83,20 @@ model Product {
 }
 
 model ProductImage {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   url       String
-  order     Int     @default(0)
+  order     Int      @default(0)
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model ProductSpec {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   key       String
   value     String
-  order     Int     @default(0)
+  order     Int      @default(0)
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
@@ -113,10 +113,10 @@ model Notification {
 }
 
 model Order {
-  id             String        @id @default(cuid())
-  orderNumber    String        @unique
-  userId         String
-  user           User          @relation(fields: [userId], references: [id])
+  id                 String        @id @default(cuid())
+  orderNumber        String        @unique
+  userId             String
+  user               User          @relation(fields: [userId], references: [id])
 
   shippingFullName   String
   shippingPhone      String
@@ -125,27 +125,30 @@ model Order {
   shippingAddress    String
   shippingPostalCode String
 
-  items          OrderItem[]
+  items              OrderItem[]
 
-  subtotal       Int
-  shippingCost   Int           @default(0)
-  discountAmount Int           @default(0)
-  totalAmount    Int
+  subtotal           Int
+  shippingCost       Int           @default(0)
+  discountAmount     Int           @default(0)
+  totalAmount        Int
 
-  couponCode     String?
-  couponId       String?
-  coupon         Coupon?       @relation(fields: [couponId], references: [id])
+  couponCode         String?
+  couponId           String?
+  coupon             Coupon?       @relation(fields: [couponId], references: [id])
 
-  status         OrderStatus   @default(PENDING)
-  paymentMethod  PaymentMethod @default(ONLINE)
-  paymentStatus  PaymentStatus @default(PENDING)
-  paymentRef     String?
+  status             OrderStatus   @default(PENDING)
+  paymentMethod      PaymentMethod @default(ONLINE)
+  paymentStatus      PaymentStatus @default(PENDING)
+  paymentRef         String?
+  receiptImageUrl    String?
+  receiptToken       String?       @unique
 
-  customerNote   String?
-  adminNote      String?
 
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  customerNote       String?
+  adminNote          String?
+
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -154,11 +157,11 @@ model Order {
 }
 
 model OrderItem {
-  id            String  @id @default(cuid())
+  id            String   @id @default(cuid())
   orderId       String
-  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId     String
-  product       Product @relation(fields: [productId], references: [id])
+  product       Product  @relation(fields: [productId], references: [id])
 
   productTitle  String
   productBrand  String
@@ -183,10 +186,12 @@ enum OrderStatus {
 
 enum PaymentMethod {
   ONLINE
+  CARD_TO_CARD
 }
 
 enum PaymentStatus {
   PENDING
+  AWAITING_RECEIPT
   PAID
   FAILED
   REFUNDED
@@ -207,6 +212,8 @@ model Wishlist {
 
 model Settings {
   id                    String   @id @default(cuid())
+  onlinePaymentEnabled  Boolean  @default(false)
+
   shippingCost          Int      @default(50000)
   freeShippingThreshold Int      @default(2000000)
   lowStockThreshold     Int      @default(3)
@@ -218,12 +225,17 @@ model Settings {
   telegramHandle        String?
   whatsappNumber        String?
   workingHours          String   @default("شنبه تا پنجشنبه: ۹:۰۰ تا ۲۱:۰۰")
+  cardNumber            String?
+  cardHolderName        String?
   smsEnabled            Boolean  @default(false)
   smsProvider           String   @default("smsir")
   smsApiKey             String?
   smsTemplateId         String?
   kavenegarApiKey       String?
   kavenegarSenderNumber String?
+  ippanelApiKey         String?
+  ippanelPatternCode    String?
+  ippanelSenderNumber   String?
   updatedAt             DateTime @updatedAt
   createdAt             DateTime @default(now())
 }

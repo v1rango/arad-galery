@@ -1,7 +1,5 @@
 import { Product, CategoryWithChildren } from "@/types/product";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
 type ApiResponse<T> = {
   success: boolean;
   data: T;
@@ -22,9 +20,17 @@ export type ProductsResponse = {
   pagination: PaginationInfo;
 };
 
+function getBaseUrl() {
+  if (typeof window !== "undefined") {
+    return "";
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+}
+
 export async function fetchProducts(page: number = 1): Promise<ProductsResponse> {
   try {
-    const res = await fetch(`${BASE_URL}/api/products?page=${page}`, {
+    const baseUrl = getBaseUrl();
+    const res = await fetch(`${baseUrl}/api/products?page=${page}`, {
       cache: "no-store",
     });
 
@@ -57,9 +63,11 @@ export async function fetchProducts(page: number = 1): Promise<ProductsResponse>
     };
   }
 }
+
 export async function fetchProductBySlug(slug: string): Promise<Product | null> {
   try {
-    const res = await fetch(`${BASE_URL}/api/products/${slug}`, {
+    const baseUrl = getBaseUrl();
+    const res = await fetch(`${baseUrl}/api/products/${slug}`, {
       cache: "no-store",
     });
 
@@ -75,10 +83,10 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
   }
 }
 
-// دریافت دسته‌بندی‌ها
 export async function fetchCategories(): Promise<CategoryWithChildren[]> {
   try {
-    const res = await fetch(`${BASE_URL}/api/categories`, {
+    const baseUrl = getBaseUrl();
+    const res = await fetch(`${baseUrl}/api/categories`, {
       cache: "no-store",
     });
 

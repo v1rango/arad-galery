@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Edit,
@@ -11,6 +11,8 @@ import {
   Tags,
   Save,
   X,
+  ImagePlus,
+  Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -19,6 +21,7 @@ type CategoryWithCount = {
   id: string;
   name: string;
   slug: string;
+  image: string | null;
   emoji: string | null;
   parentId: string | null;
   parent: { id: string; name: string } | null;
@@ -34,7 +37,10 @@ export default function AdminCategoriesPage() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const [showFormFor, setShowFormFor] = useState<
-    { mode: "new-main" } | { mode: "new-sub"; parentId: string } | { mode: "edit"; category: CategoryWithCount } | null
+    | { mode: "new-main" }
+    | { mode: "new-sub"; parentId: string }
+    | { mode: "edit"; category: CategoryWithCount }
+    | null
   >(null);
 
   const [deleteTarget, setDeleteTarget] = useState<CategoryWithCount | null>(null);
@@ -165,16 +171,19 @@ export default function AdminCategoriesPage() {
                         </button>
                       )}
 
-                      <div className="text-2xl">{cat.emoji || "📁"}</div>
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                        {cat.image ? (
+                          <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-2xl">{cat.emoji || "📁"}</span>
+                        )}
+                      </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-black text-gray-900 dark:text-white">
                           {cat.name}
                         </div>
-                        <div
-                          className="text-[11px] text-gray-500 font-mono"
-                          dir="ltr"
-                        >
+                        <div className="text-[11px] text-gray-500 font-mono" dir="ltr">
                           {cat.slug}
                         </div>
                       </div>
@@ -282,16 +291,19 @@ export default function AdminCategoriesPage() {
                           key={child.id}
                           className="bg-white dark:bg-royal-500/5 rounded-xl border border-royal-500/10 p-3 flex items-center gap-3 flex-wrap"
                         >
-                          <div className="text-xl">{child.emoji || "📄"}</div>
+                          <div className="w-10 h-10 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                            {child.image ? (
+                              <img src={child.image} alt={child.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xl">{child.emoji || "📄"}</span>
+                            )}
+                          </div>
 
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-bold text-gray-900 dark:text-white">
                               {child.name}
                             </div>
-                            <div
-                              className="text-[10px] text-gray-500 font-mono"
-                              dir="ltr"
-                            >
+                            <div className="text-[10px] text-gray-500 font-mono" dir="ltr">
                               {child.slug}
                             </div>
                           </div>
@@ -384,7 +396,10 @@ function CategoryForm({
   const [name, setName] = useState(initialData?.name || "");
   const [slug, setSlug] = useState(initialData?.slug || "");
   const [emoji, setEmoji] = useState(initialData?.emoji || "");
+  const [image, setImage] = useState(initialData?.image || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleNameChange = (value: string) => {
     setName(value);
@@ -397,6 +412,36 @@ function CategoryForm({
         .replace(/--+/g, "-")
         .replace(/^-+|-+$/g, "");
       setSlug(generated);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const toastId = toast.loading("در حال آپلود عکس...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setImage(data.url);
+        toast.success("عکس آپلود شد ✨", { id: toastId });
+      } else {
+        toast.error(data.error || "خطا در آپلود", { id: toastId });
+      }
+    } catch {
+      toast.error("خطا در ارتباط با سرور", { id: toastId });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -429,6 +474,7 @@ function CategoryForm({
           name: name.trim(),
           slug: slug.trim(),
           emoji: emoji.trim() || null,
+          image: image || null,
           parentId: parentId || null,
         }),
       });
@@ -453,48 +499,87 @@ function CategoryForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="p-4 bg-royal-500/5 border-y border-royal-500/10 space-y-3"
+      className="p-4 bg-royal-500/5 border-y border-royal-500/10 space-y-4"
     >
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-        <div>
-          <label className="block text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-            ایموجی
-          </label>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* بخش آپلود عکس */}
+        <div className="md:col-span-1 flex flex-col items-center justify-center">
           <input
-            type="text"
-            value={emoji}
-            onChange={(e) => setEmoji(e.target.value)}
-            placeholder="💄"
-            maxLength={4}
-            className="w-full px-3 py-2 rounded-lg bg-white dark:bg-black border border-royal-500/10 focus:border-royal-500 focus:outline-none text-lg text-center"
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            accept="image/png, image/jpeg, image/webp"
+            className="hidden"
           />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="relative w-full h-32 rounded-2xl border-2 border-dashed border-royal-500/30 hover:border-royal-500 bg-white dark:bg-zinc-900 flex flex-col items-center justify-center gap-2 transition-colors group overflow-hidden"
+          >
+            {image ? (
+              <>
+                <img src={image} alt="پیش‌نمایش" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
+                  تغییر عکس
+                </div>
+              </>
+            ) : (
+              <>
+                {isUploading ? (
+                  <Loader2 size={24} className="animate-spin text-royal-500" />
+                ) : (
+                  <ImagePlus size={28} className="text-royal-500" />
+                )}
+                <span className="text-xs text-gray-500 font-medium">
+                  {isUploading ? "در حال آپلود..." : "آپلود عکس دسته"}
+                </span>
+              </>
+            )}
+          </button>
         </div>
 
-        <div>
-          <label className="block text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-            نام <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="مثلاً: رژ لب"
-            className="w-full px-3 py-2 rounded-lg bg-white dark:bg-black border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm"
-          />
-        </div>
+        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+              ایموجی (اختیاری)
+            </label>
+            <input
+              type="text"
+              value={emoji}
+              onChange={(e) => setEmoji(e.target.value)}
+              placeholder="💄"
+              maxLength={4}
+              className="w-full px-3 py-2 rounded-lg bg-white dark:bg-black border border-royal-500/10 focus:border-royal-500 focus:outline-none text-lg text-center"
+            />
+          </div>
 
-        <div className="md:col-span-2">
-          <label className="block text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-            Slug <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="lipstick"
-            dir="ltr"
-            className="w-full px-3 py-2 rounded-lg bg-white dark:bg-black border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm font-mono"
-          />
+          <div>
+            <label className="block text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+              نام <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder="مثلاً: رژ لب"
+              className="w-full px-3 py-2 rounded-lg bg-white dark:bg-black border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+              Slug <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="lipstick"
+              dir="ltr"
+              className="w-full px-3 py-2 rounded-lg bg-white dark:bg-black border border-royal-500/10 focus:border-royal-500 focus:outline-none text-sm font-mono"
+            />
+          </div>
         </div>
       </div>
 

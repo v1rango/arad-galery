@@ -12,7 +12,8 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, slug, emoji } = body;
+    // تغییر این خط: اضافه شدن image
+    const { name, slug, emoji, image } = body;
 
     if (!name || !slug) {
       return NextResponse.json(
@@ -45,6 +46,7 @@ export async function PUT(
         name: name.trim(),
         slug: slug.trim(),
         emoji: emoji?.trim() || null,
+        image: image || null, // <--- این خط اضافه شد تا عکس ویرایش شده ذخیره بشه
       },
     });
 

@@ -1,14 +1,20 @@
-import Link from "next/link";
-import { Sparkles, ArrowLeft, ShieldCheck, Truck, Award } from "lucide-react";
+import { ShieldCheck, Truck, Award } from "lucide-react";
 import ProductSection from "@/components/product/ProductSection";
+import CategoryBar from "@/components/layout/CategoryBar";
+import Hero from "@/components/layout/Hero";
+import nextDynamic from "next/dynamic";
 import { prisma } from "@/lib/prisma";
 import { Product } from "@/types/product";
 
+const AnimatedShowcase = nextDynamic(() => import("@/components/product/AnimatedShowcase"), {
+  loading: () => <div className="h-[400px] rounded-[2.5rem] bg-zinc-100 dark:bg-zinc-900 animate-pulse"></div>,
+  ssr: true,
+});
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-async function getHomeProducts() {
+async function getHomeData() {
   const topSellingItems = await prisma.orderItem.groupBy({
     by: ["productId"],
     where: {
@@ -80,114 +86,94 @@ async function getHomeProducts() {
       specs: { orderBy: { order: "asc" } },
     },
     orderBy: { createdAt: "desc" },
-    take: 4,
+    take: 6,
+  });
+
+  const categories = await prisma.category.findMany({
+    where: { 
+      parentId: null
+    },
+    take: 8,
+    orderBy: { createdAt: "asc" }
   });
 
   return {
     bestSellers,
     newArrivals: JSON.parse(JSON.stringify(newArrivals)) as Product[],
+    categories: JSON.parse(JSON.stringify(categories)) as any[],
   };
 }
 
 export default async function Home() {
-  const { bestSellers, newArrivals } = await getHomeProducts();
+  const { bestSellers, newArrivals, categories } = await getHomeData();
+
+  const features = [
+    {
+      icon: <ShieldCheck className="w-8 h-8 text-royal-500" />,
+      title: "ضمانت اصالت ۱۰۰٪",
+      desc: "تمامی محصولات اورجینال و دارای ضمانت اصالت کالا",
+    },
+    {
+      icon: <Truck className="w-8 h-8 text-blush-500" />,
+      title: "ارسال سریع و مطمئن",
+      desc: "ارسال تخصصی به سراسر کشور در کمترین زمان ممکن",
+    },
+    {
+      icon: <Award className="w-8 h-8 text-royal-500" />,
+      title: "تضمین بهترین قیمت",
+      desc: "قیمت‌های رقابتی به همراه جشنواره‌ها و تخفیف‌های ویژه",
+    },
+  ];
 
   return (
-    <div>
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-bl from-royal-500/10 via-white to-blush-500/10 dark:from-royal-500/20 dark:via-black dark:to-blush-500/20" />
+    <div className="space-y-16 md:space-y-24 pb-16">
+      <Hero />
 
-        <div className="absolute top-20 right-10 w-72 h-72 bg-royal-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-blush-500/20 rounded-full blur-3xl" />
+      <div className="space-y-6">
+        <AnimatedShowcase products={bestSellers} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <CategoryBar categories={categories} />
+        </div>
+      </div>
 
-        <div className="relative px-4 sm:px-6 lg:px-8 py-20 md:py-32">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 bg-royal-500/10 text-royal-500 px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <Sparkles size={16} />
-              <span>مجموعه‌ی جدید بهاره رسید</span>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <ProductSection
+          title="پرفروش‌ترین محصولات"
+          subtitle="محبوب‌ترین محصولات از دید مشتریان آراد گالری"
+          products={bestSellers}
+          viewAllHref="/products"
+        />
+      </div>
+
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {features.map((feature, idx) => (
+            <div
+              key={idx}
+              className="p-8 rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 luxury-shadow flex flex-col items-center text-center space-y-4 hover:-translate-y-1.5 transition-all duration-300 group"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                {feature.icon}
+              </div>
+              <h3 className="text-lg font-black text-zinc-900 dark:text-white">
+                {feature.title}
+              </h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
+                {feature.desc}
+              </p>
             </div>
-
-            <h1 className="text-4xl md:text-6xl font-black leading-[1.4] pb-2 mb-6">
-              <span className="bg-gradient-to-l from-royal-500 to-blush-500 bg-clip-text text-transparent">
-                زیبایی
-              </span>
-              <span className="text-gray-900 dark:text-white"> را با ما تجربه کنید</span>
-            </h1>
-
-            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 leading-8 mb-10">
-              خرید آنلاین لوازم آرایشی و بهداشتی اورجینال از برندهای معتبر
-              با ارسال سریع به سراسر کشور
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/products"
-                className="group flex items-center gap-2 px-8 py-4 bg-gradient-to-l from-royal-500 to-blush-500 text-white font-bold rounded-2xl hover:shadow-2xl hover:shadow-royal-500/30 transition-all duration-300 hover:-translate-y-1"
-              >
-                <span>مشاهده محصولات</span>
-                <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-              </Link>
-
-              <Link
-                href="/about"
-                className="px-8 py-4 border-2 border-royal-500/20 text-royal-500 font-bold rounded-2xl hover:bg-royal-500/10 transition-all duration-300"
-              >
-                درباره ما
-              </Link>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      <ProductSection
-        title="پرفروش‌ترین محصولات"
-        subtitle="محبوب‌ترین محصولات از دید مشتریان آراد گالری"
-        products={bestSellers}
-        viewAllHref="/products"
-      />
-
-      <section className="py-16 border-t border-royal-500/10">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-8 rounded-3xl bg-royal-500/5 border border-royal-500/10 hover:border-royal-500/30 hover:-translate-y-2 transition-all duration-300">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-royal-500 to-blush-500 flex items-center justify-center">
-                <ShieldCheck size={30} className="text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-royal-500 mb-2">ضمانت اصالت</h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-7">
-                تمامی محصولات اورجینال و دارای ضمانت اصالت کالا
-              </p>
-            </div>
-
-            <div className="text-center p-8 rounded-3xl bg-royal-500/5 border border-royal-500/10 hover:border-royal-500/30 hover:-translate-y-2 transition-all duration-300">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-royal-500 to-blush-500 flex items-center justify-center">
-                <Truck size={30} className="text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-royal-500 mb-2">ارسال سریع</h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-7">
-                ارسال به سراسر کشور در کمترین زمان ممکن
-              </p>
-            </div>
-
-            <div className="text-center p-8 rounded-3xl bg-royal-500/5 border border-royal-500/10 hover:border-royal-500/30 hover:-translate-y-2 transition-all duration-300">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-royal-500 to-blush-500 flex items-center justify-center">
-                <Award size={30} className="text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-royal-500 mb-2">بهترین قیمت</h3>
-              <p className="text-gray-600 dark:text-gray-400 leading-7">
-                قیمت‌های رقابتی و تخفیف‌های ویژه برای مشتریان
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <ProductSection
-        title="جدیدترین محصولات"
-        subtitle="تازه‌ترین محصولاتی که به فروشگاه اضافه شدن"
-        products={newArrivals}
-        viewAllHref="/products"
-      />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <ProductSection
+          title="جدیدترین محصولات"
+          subtitle="تازه‌ترین محصولاتی که به فروشگاه اضافه شده‌اند"
+          products={newArrivals}
+          viewAllHref="/products"
+        />
+      </div>
     </div>
   );
 }

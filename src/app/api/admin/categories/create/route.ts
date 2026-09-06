@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, slug, emoji, parentId } = body;
+    const { name, slug, emoji, image, parentId } = body;
 
     if (!name || !slug) {
       return NextResponse.json(
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         slug: slug.trim(),
         emoji: emoji?.trim() || null,
+        image: image || null, // ذخیره آدرس عکس در دیتابیس
         parentId: parentId || null,
       },
     });
