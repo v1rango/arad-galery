@@ -7,13 +7,32 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1", 10);
+    const categorySlug = searchParams.get("category");
+    const subSlug = searchParams.get("sub");
+
     const skip = (page - 1) * PAGE_SIZE;
+
+    // ساخت شرط‌های فیلتر
+    const where: any = { isActive: true };
+
+    if (subSlug) {
+      // فیلتر بر اساس زیردسته مشخص
+      where.category = { slug: subSlug };
+    } else if (categorySlug) {
+      // فیلتر بر اساس دسته اصلی (شامل خود دسته یا زیردسته‌های آن)
+      where.OR = [
+        { category: { slug: categorySlug } },
+        { category: { parent: { slug: categorySlug } } },
+      ];
+    }
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
-        where: { isActive: true },
+        where,
         include: {
-          category: true,
+          category: {
+            include: { parent: true },
+          },
           images: { orderBy: { order: "asc" } },
           specs: { orderBy: { order: "asc" } },
         },
@@ -21,9 +40,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: PAGE_SIZE,
       }),
-      prisma.product.count({
-        where: { isActive: true },
-      }),
+      prisma.product.count({ where }),
     ]);
 
     const totalPages = Math.ceil(total / PAGE_SIZE);

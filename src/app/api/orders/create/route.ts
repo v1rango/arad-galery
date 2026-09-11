@@ -10,6 +10,8 @@ import { randomBytes } from "crypto";
 type CartItemInput = {
   productId: string;
   quantity: number;
+  variantId?: string;
+  variantTitle?: string;
 };
 
 type AddressInput = {
@@ -77,6 +79,7 @@ export async function POST(request: NextRequest) {
       where: { id: { in: productIds }, isActive: true },
       include: {
         images: { orderBy: { order: "asc" }, take: 1 },
+        variants: true,
       },
     });
 
@@ -91,31 +94,56 @@ export async function POST(request: NextRequest) {
       const product = products.find((p) => p.id === item.productId);
       if (!product) continue;
 
-      if (!product.inStock || product.stockCount < item.quantity) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `موجودی "${product.title}" کافی نیست (موجود: ${product.stockCount})`,
-          },
-          { status: 400 }
-        );
+      if (item.variantId) {
+        const variant = product.variants.find((v) => v.id === item.variantId);
+        if (!variant || !variant.inStock || variant.stockCount < item.quantity) {
+          const vTitle = variant?.title || item.variantTitle || "";
+          return NextResponse.json(
+            {
+              success: false,
+              error: `موجودی گزینه "${vTitle}" از محصول "${product.title}" کافی نیست (موجود: ${variant?.stockCount ?? 0})`,
+            },
+            { status: 400 }
+          );
+        }
+      } else {
+        if (!product.inStock || product.stockCount < item.quantity) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `موجودی "${product.title}" کافی نیست (موجود: ${product.stockCount})`,
+            },
+            { status: 400 }
+          );
+        }
       }
     }
 
     let subtotal = 0;
     const orderItemsData = items.map((item) => {
       const product = products.find((p) => p.id === item.productId)!;
-      const price = product.discountPrice ?? product.price;
-      const totalPrice = price * item.quantity;
+      const variant = item.variantId
+        ? product.variants.find((v) => v.id === item.variantId)
+        : null;
+
+      const basePrice = variant?.price ?? product.price;
+      const discountPrice =
+        variant?.discountPrice ??
+        (variant?.price ? null : product.discountPrice);
+
+      const priceToUse = discountPrice ?? basePrice;
+      const totalPrice = priceToUse * item.quantity;
       subtotal += totalPrice;
 
       return {
         productId: product.id,
+        variantId: variant?.id || item.variantId || null,
+        variantTitle: variant?.title || item.variantTitle || null,
         productTitle: product.title,
         productBrand: product.brand,
         productImage: product.images[0]?.url || null,
-        price: product.price,
-        discountPrice: product.discountPrice,
+        price: basePrice,
+        discountPrice: discountPrice,
         quantity: item.quantity,
         totalPrice,
       };

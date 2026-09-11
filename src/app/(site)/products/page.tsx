@@ -27,24 +27,27 @@ function ProductsPageContent() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   useEffect(() => {
-    async function loadInitialData() {
+    async function loadData() {
       setIsLoading(true);
       try {
         const [productsRes, categoriesData] = await Promise.all([
-          fetchProducts(1),
-          fetchCategories(),
+          fetchProducts(1, categorySlug, subSlug),
+          categories.length === 0 ? fetchCategories() : Promise.resolve(categories),
         ]);
+
         setProducts(productsRes.products);
         setPagination(productsRes.pagination);
-        setCategories(categoriesData);
+        if (categories.length === 0) {
+          setCategories(categoriesData);
+        }
       } catch (error) {
-        console.error("Error loading initial data:", error);
+        console.error("Error loading products:", error);
       } finally {
         setIsLoading(false);
       }
     }
-    loadInitialData();
-  }, []);
+    loadData();
+  }, [categorySlug, subSlug]);
 
   const handleLoadMore = async () => {
     if (!pagination || !pagination.hasMore || isLoadingMore) return;
@@ -52,7 +55,7 @@ function ProductsPageContent() {
     setIsLoadingMore(true);
     try {
       const nextPage = pagination.page + 1;
-      const res = await fetchProducts(nextPage);
+      const res = await fetchProducts(nextPage, categorySlug, subSlug);
 
       setProducts((prev) => [...prev, ...res.products]);
       setPagination(res.pagination);
@@ -74,15 +77,6 @@ function ProductsPageContent() {
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
-
-    if (currentSub) {
-      result = result.filter((p) => p.categoryId === currentSub.id);
-    } else if (currentCategory) {
-      const childrenIds = currentCategory.children?.map((s) => s.id) || [];
-      if (childrenIds.length > 0) {
-        result = result.filter((p) => childrenIds.includes(p.categoryId));
-      }
-    }
 
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -106,7 +100,7 @@ function ProductsPageContent() {
         );
         break;
       case "bestselling":
-        result.sort((a, b) => b.stockCount - a.stockCount);
+        result.sort((a, b) => (b.stockCount ?? 0) - (a.stockCount ?? 0));
         break;
       case "newest":
       default:
@@ -119,11 +113,11 @@ function ProductsPageContent() {
     }
 
     return result;
-  }, [search, sort, currentCategory, currentSub, products]);
+  }, [search, sort, products]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8">
-      {/* Header Section */}
+      {/* Header */}
       <div className="space-y-3">
         <nav className="flex items-center gap-2 text-xs font-bold text-zinc-400">
           <span>محصولات</span>
@@ -144,16 +138,6 @@ function ProductsPageContent() {
         <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">
           {pageTitle}
         </h1>
-
-        {!isLoading && (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium max-w-2xl">
-            {currentSub
-              ? `مجموعه‌ی کامل ${currentSub.name} از برترین برندهای آرایشی و بهداشتی`
-              : currentCategory
-              ? `مشاهده و خرید محصولات ${currentCategory.name} با ضمانت اصالت کالا`
-              : "مشاهده تمام محصولات آراد گالری - مرجع تخصصی آرایشی و مراقبت پوستی اورجینال"}
-          </p>
-        )}
       </div>
 
       {/* Filters Bar */}
@@ -176,7 +160,7 @@ function ProductsPageContent() {
             ))}
           </div>
 
-          {/* Load More Button & Stats */}
+          {/* Load More */}
           {pagination && (
             <div className="flex flex-col items-center justify-center gap-4 pt-6 border-t border-zinc-100 dark:border-zinc-800/60">
               <p className="text-xs font-bold text-zinc-400">
@@ -230,7 +214,7 @@ function ProductsPageContent() {
             محصولی یافت نشد
           </h3>
           <p className="text-xs text-zinc-400 max-w-sm font-medium">
-            نتیجه‌ای متناسب با فیلترهای انتخابی شما پیدا نشد. عبارت دیگری را جستجو کنید.
+            نتیجه‌ای متناسب با فیلترهای انتخابی شما پیدا نشد.
           </p>
         </div>
       )}

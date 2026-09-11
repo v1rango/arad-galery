@@ -18,6 +18,7 @@ export async function GET(
         category: true,
         images: { orderBy: { order: "asc" } },
         specs: { orderBy: { order: "asc" } },
+        variants: { orderBy: { order: "asc" } },
       },
     });
 

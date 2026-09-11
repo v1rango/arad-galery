@@ -1,11 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Product } from "@/types/product";
+import { Product, ProductVariant } from "@/types/product";
 
 export type CartItem = {
+  id?: string;
   product: Product;
+  variant?: ProductVariant | null;
   quantity: number;
 };
+
+export function getCartItemKey(item: {
+  id?: string;
+  product: { id: string };
+  variant?: { id: string } | null;
+}): string {
+  if (item.id) return item.id;
+  if (item.variant?.id) return `${item.product.id}-${item.variant.id}`;
+  return item.product.id;
+}
 
 export type AppliedCoupon = {
   code: string;
@@ -19,9 +31,13 @@ export type AppliedCoupon = {
 type CartStore = {
   items: CartItem[];
   appliedCoupon: AppliedCoupon | null;
-  addItem: (product: Product, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addItem: (
+    product: Product,
+    quantity?: number,
+    variant?: ProductVariant | null
+  ) => void;
+  removeItem: (key: string) => void;
+  updateQuantity: (key: string, quantity: number) => void;
   clearCart: () => void;
   applyCoupon: (coupon: AppliedCoupon) => void;
   removeCoupon: () => void;
@@ -39,19 +55,24 @@ export const useCartStore = create<CartStore>()(
       items: [],
       appliedCoupon: null,
 
-      addItem: (product, quantity = 1) => {
+      addItem: (product, quantity = 1, variant = null) => {
         set((state) => {
+          const targetKey = variant?.id
+            ? `${product.id}-${variant.id}`
+            : product.id;
+
           const existingItem = state.items.find(
-            (item) => item.product.id === product.id
+            (item) => getCartItemKey(item) === targetKey
           );
 
-          const maxQty = product.stockCount ?? 99;
+          const maxQty =
+            (variant ? variant.stockCount : product.stockCount) ?? 99;
 
           if (existingItem) {
             const newQty = Math.min(existingItem.quantity + quantity, maxQty);
             return {
               items: state.items.map((item) =>
-                item.product.id === product.id
+                getCartItemKey(item) === targetKey
                   ? { ...item, quantity: newQty }
                   : item
               ),
@@ -62,26 +83,35 @@ export const useCartStore = create<CartStore>()(
           return {
             items: [
               ...state.items,
-              { product, quantity: Math.min(quantity, maxQty) },
+              {
+                id: targetKey,
+                product,
+                variant: variant || null,
+                quantity: Math.min(quantity, maxQty),
+              },
             ],
             appliedCoupon: null,
           };
         });
       },
 
-      removeItem: (productId) => {
+      removeItem: (key) => {
         set((state) => ({
-          items: state.items.filter((item) => item.product.id !== productId),
+          items: state.items.filter(
+            (item) =>
+              getCartItemKey(item) !== key && item.product.id !== key
+          ),
           appliedCoupon: null,
         }));
       },
 
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (key, quantity) => {
         set((state) => {
           if (quantity <= 0) {
             return {
               items: state.items.filter(
-                (item) => item.product.id !== productId
+                (item) =>
+                  getCartItemKey(item) !== key && item.product.id !== key
               ),
               appliedCoupon: null,
             };
@@ -89,8 +119,14 @@ export const useCartStore = create<CartStore>()(
 
           return {
             items: state.items.map((item) => {
-              if (item.product.id === productId) {
-                const maxQty = item.product.stockCount ?? 99;
+              if (
+                getCartItemKey(item) === key ||
+                (!item.variant && item.product.id === key)
+              ) {
+                const maxQty =
+                  (item.variant
+                    ? item.variant.stockCount
+                    : item.product.stockCount) ?? 99;
                 return { ...item, quantity: Math.min(quantity, maxQty) };
               }
               return item;
@@ -118,21 +154,27 @@ export const useCartStore = create<CartStore>()(
 
       getTotalPrice: () => {
         return get().items.reduce((total, item) => {
-          const price = item.product.discountPrice ?? item.product.price;
-          return total + price * item.quantity;
+          const unitPrice =
+            item.variant?.discountPrice ??
+            item.variant?.price ??
+            item.product.discountPrice ??
+            item.product.price;
+          return total + unitPrice * item.quantity;
         }, 0);
       },
 
       getOriginalTotal: () => {
         return get().items.reduce((total, item) => {
-          return total + item.product.price * item.quantity;
+          const originalPrice =
+            item.variant?.price ?? item.product.price;
+          return total + originalPrice * item.quantity;
         }, 0);
       },
 
       getTotalDiscount: () => {
         const original = get().getOriginalTotal();
         const final = get().getTotalPrice();
-        return original - final;
+        return Math.max(0, original - final);
       },
 
       getCouponDiscount: () => {

@@ -21,6 +21,9 @@ export async function GET(
         specs: {
           orderBy: { order: "asc" },
         },
+        variants: {
+          orderBy: { order: "asc" },
+        },
       },
     });
 

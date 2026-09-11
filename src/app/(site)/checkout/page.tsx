@@ -163,6 +163,8 @@ export default function CheckoutPage() {
           items: items.map((item) => ({
             productId: item.product.id,
             quantity: item.quantity,
+            variantId: item.variant?.id || undefined,
+            variantTitle: item.variant?.title || undefined,
           })),
           address,
           customerNote: customerNote.trim() || undefined,

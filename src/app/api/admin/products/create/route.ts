@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
       categoryId,
       images,
       specs,
+      variants,
       seoTitle,
       seoDescription,
       seoKeywords,
@@ -77,6 +78,20 @@ export async function POST(request: NextRequest) {
             .map((s: { key: string; value: string }, index: number) => ({
               key: s.key,
               value: s.value,
+              order: index,
+            })),
+        },
+        variants: {
+          create: (variants || [])
+            .filter((v: { title: string }) => v.title && v.title.trim())
+            .map((v: any, index: number) => ({
+              title: v.title.trim(),
+              type: v.type || null,
+              colorCode: v.colorCode || null,
+              price: v.price ? parseInt(v.price) : null,
+              discountPrice: v.discountPrice ? parseInt(v.discountPrice) : null,
+              stockCount: parseInt(v.stockCount) || 0,
+              inStock: (parseInt(v.stockCount) || 0) > 0,
               order: index,
             })),
         },

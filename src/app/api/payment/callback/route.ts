@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
     const productIds = order.items.map((item) => item.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
+      include: { variants: true },
     });
 
     const insufficientItems: string[] = [];
@@ -87,8 +88,17 @@ export async function GET(request: NextRequest) {
         insufficientItems.push(item.productTitle);
         continue;
       }
-      if (!product.inStock || product.stockCount < item.quantity) {
-        insufficientItems.push(product.title);
+      if (item.variantId) {
+        const variant = product.variants.find((v) => v.id === item.variantId);
+        if (!variant || !variant.inStock || variant.stockCount < item.quantity) {
+          insufficientItems.push(
+            `${product.title} (${item.variantTitle || variant?.title || ""})`
+          );
+        }
+      } else {
+        if (!product.inStock || product.stockCount < item.quantity) {
+          insufficientItems.push(product.title);
+        }
       }
     }
 
@@ -139,7 +149,22 @@ export async function GET(request: NextRequest) {
     await prisma.$transaction(async (tx) => {
       for (const item of order.items) {
         const product = products.find((p) => p.id === item.productId)!;
-        const newStock = product.stockCount - item.quantity;
+
+        if (item.variantId) {
+          const variant = product.variants.find((v) => v.id === item.variantId);
+          if (variant) {
+            const newVariantStock = Math.max(0, variant.stockCount - item.quantity);
+            await tx.productVariant.update({
+              where: { id: variant.id },
+              data: {
+                stockCount: newVariantStock,
+                inStock: newVariantStock > 0,
+              },
+            });
+          }
+        }
+
+        const newStock = Math.max(0, product.stockCount - item.quantity);
 
         await tx.product.update({
           where: { id: product.id },
@@ -151,7 +176,9 @@ export async function GET(request: NextRequest) {
 
         stockUpdates.push({
           productId: product.id,
-          title: product.title,
+          title: item.variantTitle
+            ? `${product.title} (${item.variantTitle})`
+            : product.title,
           newStock,
           wasAboveThreshold: product.stockCount > LOW_STOCK_THRESHOLD,
         });

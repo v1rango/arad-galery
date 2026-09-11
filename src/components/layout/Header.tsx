@@ -1,4 +1,5 @@
 "use client";
+
 import Logo from "@/components/ui/Logo";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
@@ -31,7 +32,7 @@ export default function Header() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -63,25 +64,47 @@ export default function Header() {
 
   return (
     <header 
-      className={`sticky top-0 z-50 glass-effect border-b transition-all duration-300 ${
+      className={`sticky top-0 z-50 glass-effect border-b transition-colors duration-300 ${
         isScrolled 
-          ? "border-royal-500/10 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl shadow-lg shadow-zinc-900/5 py-2" 
-          : "border-transparent bg-white/50 dark:bg-zinc-950/50 backdrop-blur-md py-0"
+          ? "border-royal-500/10 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl shadow-lg shadow-zinc-900/5" 
+          : "border-transparent bg-white/50 dark:bg-zinc-950/50 backdrop-blur-md"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className={`flex items-center justify-between transition-all duration-300 ${isScrolled ? "h-16" : "h-20"}`}>
+        {/* استفاده از Framer Motion برای تغییر ارتفاع پدینگ هدر به‌صورت کاملاً نرم (GPU accelerated) */}
+        <motion.div 
+          animate={{ 
+            paddingTop: isScrolled ? "8px" : "16px",
+            paddingBottom: isScrolled ? "8px" : "16px"
+          }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="flex items-center justify-between"
+        >
           
-          {/* لوگو */}
+          {/* لوگو و نام برند */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-11 h-11 shrink-0 rounded-2xl overflow-hidden p-0.5 bg-gradient-to-tr from-royal-500 to-blush-500 transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
+            {/* ترانسفورم نرم روی آیکون لوگو */}
+            <motion.div 
+              animate={{ scale: isScrolled ? 0.9 : 1 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="relative w-11 h-11 shrink-0 rounded-2xl overflow-hidden p-0.5 bg-gradient-to-tr from-royal-500 to-blush-500 transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3"
+            >
               <div className="w-full h-full bg-white dark:bg-zinc-950 rounded-[14px] flex items-center justify-center overflow-hidden">
                 <Logo size={36} priority />
               </div>
-            </div>
-            <span className={`font-black tracking-tight bg-gradient-to-l from-royal-600 via-royal-500 to-blush-500 bg-clip-text text-transparent transition-all duration-300 ${isScrolled ? "text-xl" : "text-2xl"}`}>
+            </motion.div>
+
+            {/* استفاده از Scale برای انیمیشن فوق‌العاده نرم متن «آراد گالری» بدون پرش Layout */}
+            <motion.span 
+              animate={{ 
+                scale: isScrolled ? 0.88 : 1,
+              }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              style={{ transformOrigin: "right center" }}
+              className="text-2xl font-black tracking-tight bg-gradient-to-l from-royal-600 via-royal-500 to-blush-500 bg-clip-text text-transparent inline-block"
+            >
               آراد گالری
-            </span>
+            </motion.span>
           </Link>
 
           {/* نویگیشن دسکتاپ */}
@@ -221,7 +244,7 @@ export default function Header() {
               </AnimatePresence>
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* منوی موبایل */}
         <AnimatePresence>

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Plus, Minus, Trash2 } from "lucide-react";
-import { CartItem, useCartStore } from "@/stores/cartStore";
+import { CartItem, getCartItemKey, useCartStore } from "@/stores/cartStore";
 import toast from "react-hot-toast";
 
 type Props = {
@@ -18,29 +18,38 @@ export default function CartItemRow({ item }: Props) {
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
 
-  const { product, quantity } = item;
-  const maxQty = product.stockCount ?? 99;
-  const hasDiscount = product.discountPrice && product.discountPrice < product.price;
-  const unitPrice = hasDiscount ? product.discountPrice! : product.price;
-  const totalPrice = unitPrice * quantity;
+  const { product, variant, quantity } = item;
+  const itemKey = getCartItemKey(item);
+  const maxQty = (variant ? variant.stockCount : product.stockCount) ?? 99;
+
+  const origPrice = variant?.price ?? product.price;
+  const finalUnitPrice =
+    variant?.discountPrice ??
+    variant?.price ??
+    product.discountPrice ??
+    product.price;
+  const hasDiscount = finalUnitPrice < origPrice;
+  const totalPrice = finalUnitPrice * quantity;
 
   const handleIncrease = () => {
     if (quantity >= maxQty) {
       toast.error(`فقط ${maxQty.toLocaleString("fa-IR")} عدد در انبار موجود است`);
       return;
     }
-    updateQuantity(product.id, quantity + 1);
+    updateQuantity(itemKey, quantity + 1);
   };
 
   const handleDecrease = () => {
     if (quantity > 1) {
-      updateQuantity(product.id, quantity - 1);
+      updateQuantity(itemKey, quantity - 1);
     }
   };
 
   const handleRemove = () => {
-    removeItem(product.id);
-    toast.success(`${product.title} از سبد حذف شد`);
+    removeItem(itemKey);
+    toast.success(
+      `${product.title} ${variant ? `(${variant.title})` : ""} از سبد حذف شد`
+    );
   };
 
   return (
@@ -50,8 +59,8 @@ export default function CartItemRow({ item }: Props) {
         className="relative w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden bg-royal-500/5 shrink-0"
       >
         <Image
-        src={product.images[0]?.url || "/placeholder.png"}
-          alt={`${product.title} - ${product.brand}`}          
+          src={product.images[0]?.url || "/placeholder.png"}
+          alt={`${product.title} - ${product.brand}`}
           fill
           sizes="120px"
           className="object-cover"
@@ -66,7 +75,7 @@ export default function CartItemRow({ item }: Props) {
 
           <button
             onClick={handleRemove}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 transition-colors shrink-0"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 transition-colors shrink-0 cursor-pointer"
             aria-label="حذف از سبد"
           >
             <Trash2 size={16} />
@@ -75,17 +84,32 @@ export default function CartItemRow({ item }: Props) {
 
         <Link
           href={`/products/${product.slug}`}
-          className="text-sm md:text-base font-bold text-gray-900 dark:text-white line-clamp-2 hover:text-royal-500 transition-colors"
+          className="text-sm md:text-base font-bold text-gray-900 dark:text-white line-clamp-1 hover:text-royal-500 transition-colors"
         >
           {product.title}
         </Link>
+
+        {/* برچسب تنوع (رنگ / سایز / حجم) */}
+        {variant && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-royal-500/10 text-royal-700 dark:text-royal-300 text-xs font-bold border border-royal-500/15">
+              {variant.colorCode && (
+                <span
+                  className="w-2.5 h-2.5 rounded-full border border-black/20 shadow-xs"
+                  style={{ backgroundColor: variant.colorCode }}
+                />
+              )}
+              <span>{variant.title}</span>
+            </span>
+          </div>
+        )}
 
         <div className="mt-auto pt-3 flex items-end justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-1 bg-royal-500/10 rounded-xl p-1">
             <button
               onClick={handleIncrease}
               disabled={quantity >= maxQty}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-gradient-to-br from-royal-500 to-blush-500 text-white hover:scale-110 disabled:opacity-40 disabled:hover:scale-100 transition-transform"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-gradient-to-br from-royal-500 to-blush-500 text-white hover:scale-110 disabled:opacity-40 disabled:hover:scale-100 transition-transform cursor-pointer"
               aria-label="افزایش تعداد"
             >
               <Plus size={14} />
@@ -98,7 +122,7 @@ export default function CartItemRow({ item }: Props) {
             <button
               onClick={handleDecrease}
               disabled={quantity <= 1}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-black text-royal-500 border border-royal-500/20 hover:bg-royal-500/10 disabled:opacity-40 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-black text-royal-500 border border-royal-500/20 hover:bg-royal-500/10 disabled:opacity-40 transition-colors cursor-pointer"
               aria-label="کاهش تعداد"
             >
               <Minus size={14} />
@@ -108,7 +132,7 @@ export default function CartItemRow({ item }: Props) {
           <div className="flex flex-col items-end">
             {hasDiscount && (
               <span className="text-[11px] text-gray-400 line-through">
-                {formatPrice(product.price * quantity)}
+                {formatPrice(origPrice * quantity)}
               </span>
             )}
             <div className="flex items-baseline gap-1">

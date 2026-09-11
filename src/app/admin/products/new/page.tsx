@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import SeoFieldsSection from "@/components/admin/SeoFieldsSection";
+import ProductVariantsSection, {
+  VariantFormItem,
+} from "@/components/admin/ProductVariantsSection";
 
 type LeafCategory = {
   id: string;
@@ -46,6 +49,8 @@ export default function NewProductPage() {
   const [categoryId, setCategoryId] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [specs, setSpecs] = useState<Spec[]>([{ key: "", value: "" }]);
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants] = useState<VariantFormItem[]>([]);
 
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
@@ -206,6 +211,7 @@ export default function NewProductPage() {
           categoryId,
           images,
           specs: specs.filter((s) => s.key.trim() && s.value.trim()),
+          variants: hasVariants ? variants.filter((v) => v.title.trim()) : [],
           seoTitle: seoTitle.trim() || null,
           seoDescription: seoDescription.trim() || null,
           seoKeywords: seoKeywords.trim() || null,
@@ -477,6 +483,15 @@ export default function NewProductPage() {
             💡 اولین عکس، عکس اصلی محصوله. با کلیک روی عکس‌ها می‌تونی ترتیبشون رو عوض کنی.
           </p>
         </section>
+
+        <ProductVariantsSection
+          hasVariants={hasVariants}
+          setHasVariants={setHasVariants}
+          variants={variants}
+          setVariants={setVariants}
+          basePrice={price}
+          onSyncTotalStock={(total) => setStockCount(total.toString())}
+        />
 
         <SeoFieldsSection
           seoTitle={seoTitle}

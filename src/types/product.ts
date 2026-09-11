@@ -24,6 +24,22 @@ export type Category = {
   image: string | null;
 };
 
+export type ProductVariant = {
+  id: string;
+  productId: string;
+  title: string;
+  type?: string | null;
+  colorCode?: string | null;
+  price?: number | null;
+  discountPrice?: number | null;
+  stockCount: number;
+  inStock: boolean;
+  sku?: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -40,6 +56,7 @@ export type Product = {
   category?: Category;
   images: ProductImage[];
   specs: ProductSpec[];
+  variants?: ProductVariant[];
   createdAt: string;
   updatedAt: string;
 };

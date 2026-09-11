@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ShoppingBag, ArrowLeft, Trash2 } from "lucide-react";
-import { useCartStore } from "@/stores/cartStore";
+import { useCartStore, getCartItemKey } from "@/stores/cartStore";
 import CartItemRow from "@/components/cart/CartItemRow";
 import CartSummary from "@/components/cart/CartSummary";
 import toast from "react-hot-toast";
@@ -90,7 +90,7 @@ export default function CartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-3">
           {items.map((item) => (
-            <CartItemRow key={item.product.id} item={item} />
+            <CartItemRow key={getCartItemKey(item)} item={item} />
           ))}
         </div>
 

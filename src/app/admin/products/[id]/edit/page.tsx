@@ -14,6 +14,9 @@ import {
   GripVertical,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import ProductVariantsSection, {
+  VariantFormItem,
+} from "@/components/admin/ProductVariantsSection";
 
 type LeafCategory = {
   id: string;
@@ -52,6 +55,8 @@ export default function EditProductPage({ params }: Props) {
   const [categoryId, setCategoryId] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [specs, setSpecs] = useState<Spec[]>([{ key: "", value: "" }]);
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants] = useState<VariantFormItem[]>([]);
 
   useEffect(() => {
     async function loadData() {
@@ -88,6 +93,24 @@ export default function EditProductPage({ params }: Props) {
               }))
             : [{ key: "", value: "" }]
         );
+
+        if (p.variants && p.variants.length > 0) {
+          setHasVariants(true);
+          setVariants(
+            p.variants.map((v: any) => ({
+              id: v.id,
+              title: v.title,
+              type: v.type || "COLOR",
+              colorCode: v.colorCode || undefined,
+              price: v.price ? v.price.toString() : "",
+              discountPrice: v.discountPrice ? v.discountPrice.toString() : "",
+              stockCount: v.stockCount.toString(),
+            }))
+          );
+        } else {
+          setHasVariants(false);
+          setVariants([]);
+        }
 
         if (categoriesData.success) {
           setCategories(categoriesData.data);
@@ -224,6 +247,7 @@ export default function EditProductPage({ params }: Props) {
           categoryId,
           images,
           specs: specs.filter((s) => s.key.trim() && s.value.trim()),
+          variants: hasVariants ? variants.filter((v) => v.title.trim()) : [],
         }),
       });
 
@@ -513,6 +537,15 @@ export default function EditProductPage({ params }: Props) {
             </div>
           )}
         </section>
+
+        <ProductVariantsSection
+          hasVariants={hasVariants}
+          setHasVariants={setHasVariants}
+          variants={variants}
+          setVariants={setVariants}
+          basePrice={price}
+          onSyncTotalStock={(total) => setStockCount(total.toString())}
+        />
 
         <section className="bg-white dark:bg-royal-500/5 rounded-2xl border border-royal-500/10 p-5 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-royal-500/10">

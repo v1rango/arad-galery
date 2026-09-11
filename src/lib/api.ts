@@ -27,10 +27,19 @@ function getBaseUrl() {
   return process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 }
 
-export async function fetchProducts(page: number = 1): Promise<ProductsResponse> {
+export async function fetchProducts(
+  page: number = 1,
+  categorySlug?: string | null,
+  subSlug?: string | null
+): Promise<ProductsResponse> {
   try {
     const baseUrl = getBaseUrl();
-    const res = await fetch(`${baseUrl}/api/products?page=${page}`, {
+    const params = new URLSearchParams({ page: String(page) });
+
+    if (categorySlug) params.set("category", categorySlug);
+    if (subSlug) params.set("sub", subSlug);
+
+    const res = await fetch(`${baseUrl}/api/products?${params.toString()}`, {
       cache: "no-store",
     });
 

@@ -75,6 +75,7 @@ model Product {
 
   images            ProductImage[]
   specs             ProductSpec[]
+  variants          ProductVariant[]
   orderItems        OrderItem[]
   wishlistItems     Wishlist[]
 
@@ -97,6 +98,25 @@ model ProductSpec {
   order     Int      @default(0)
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductVariant {
+  id            String   @id @default(cuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  title         String
+  type          String?
+  colorCode     String?
+  price         Int?
+  discountPrice Int?
+  stockCount    Int      @default(0)
+  inStock       Boolean  @default(true)
+  sku           String?
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([productId])
 }
 
 model Notification {
@@ -166,6 +186,9 @@ model OrderItem {
   productTitle  String
   productBrand  String
   productImage  String?
+
+  variantId     String?
+  variantTitle  String?
 
   price         Int
   discountPrice Int?

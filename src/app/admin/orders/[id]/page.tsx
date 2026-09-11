@@ -56,6 +56,7 @@ type OrderDetail = {
     productTitle: string;
     productBrand: string;
     productImage: string | null;
+    variantTitle?: string | null;
     price: number;
     discountPrice: number | null;
     quantity: number;
@@ -375,6 +376,12 @@ export default function AdminOrderDetailPage({ params }: Props) {
                 <div className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">
                   {item.productTitle}
                 </div>
+                {item.variantTitle && (
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-md bg-royal-500/10 text-royal-600 dark:text-royal-400 text-xs font-bold">
+                    <span>تنوع:</span>
+                    <span>{item.variantTitle}</span>
+                  </div>
+                )}
                 <div className="text-[11px] text-gray-500 mt-1">
                   {item.quantity.toLocaleString("fa-IR")} ×{" "}
                   {formatPrice(item.discountPrice ?? item.price)} تومان

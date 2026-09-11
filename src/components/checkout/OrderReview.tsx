@@ -105,10 +105,18 @@ export default function OrderReview({ address, paymentMethod, items }: Props) {
 
         <div className="space-y-3">
           {items.map((item) => {
-            const price = item.product.discountPrice ?? item.product.price;
+            const price =
+              item.variant?.discountPrice ??
+              item.variant?.price ??
+              item.product.discountPrice ??
+              item.product.price;
+            const itemKey = item.variant
+              ? `${item.product.id}-${item.variant.id}`
+              : item.product.id;
+
             return (
               <div
-                key={item.product.id}
+                key={itemKey}
                 className="flex items-center gap-3 pb-3 last:pb-0 border-b border-royal-500/10 last:border-b-0"
               >
                 <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-royal-500/5 shrink-0">
@@ -128,6 +136,17 @@ export default function OrderReview({ address, paymentMethod, items }: Props) {
                   <div className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">
                     {item.product.title}
                   </div>
+                  {item.variant && (
+                    <div className="text-[11px] text-royal-600 dark:text-royal-400 font-bold mt-0.5 flex items-center gap-1">
+                      {item.variant.colorCode && (
+                        <span
+                          className="w-2 h-2 rounded-full border border-black/20"
+                          style={{ backgroundColor: item.variant.colorCode }}
+                        />
+                      )}
+                      <span>{item.variant.title}</span>
+                    </div>
+                  )}
                   <div className="text-xs text-gray-500 mt-1">
                     {item.quantity.toLocaleString("fa-IR")} × {formatPrice(price)} تومان
                   </div>

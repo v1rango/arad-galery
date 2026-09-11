@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
     const productIds = order.items.map((item) => item.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
+      include: { variants: true },
     });
 
     const stockUpdates: Array<{
@@ -99,6 +100,20 @@ export async function GET(request: NextRequest) {
         const product = products.find((p) => p.id === item.productId);
         if (!product) continue;
 
+        if (item.variantId) {
+          const variant = product.variants.find((v) => v.id === item.variantId);
+          if (variant) {
+            const newVariantStock = Math.max(0, variant.stockCount - item.quantity);
+            await tx.productVariant.update({
+              where: { id: variant.id },
+              data: {
+                stockCount: newVariantStock,
+                inStock: newVariantStock > 0,
+              },
+            });
+          }
+        }
+
         const newStock = Math.max(0, product.stockCount - item.quantity);
 
         await tx.product.update({
@@ -111,7 +126,9 @@ export async function GET(request: NextRequest) {
 
         stockUpdates.push({
           productId: product.id,
-          title: product.title,
+          title: item.variantTitle
+            ? `${product.title} (${item.variantTitle})`
+            : product.title,
           newStock,
           wasAboveThreshold: product.stockCount > LOW_STOCK_THRESHOLD,
         });

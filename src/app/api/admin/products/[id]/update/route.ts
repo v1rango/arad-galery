@@ -24,6 +24,7 @@ export async function PUT(
       categoryId,
       images,
       specs,
+      variants,
       seoTitle,
       seoDescription,
       seoKeywords,
@@ -73,6 +74,7 @@ export async function PUT(
 
     await prisma.productImage.deleteMany({ where: { productId: id } });
     await prisma.productSpec.deleteMany({ where: { productId: id } });
+    await prisma.productVariant.deleteMany({ where: { productId: id } });
 
     const updated = await prisma.product.update({
       where: { id },
@@ -102,6 +104,20 @@ export async function PUT(
             .map((s: { key: string; value: string }, index: number) => ({
               key: s.key,
               value: s.value,
+              order: index,
+            })),
+        },
+        variants: {
+          create: (variants || [])
+            .filter((v: { title: string }) => v.title && v.title.trim())
+            .map((v: any, index: number) => ({
+              title: v.title.trim(),
+              type: v.type || null,
+              colorCode: v.colorCode || null,
+              price: v.price ? parseInt(v.price) : null,
+              discountPrice: v.discountPrice ? parseInt(v.discountPrice) : null,
+              stockCount: parseInt(v.stockCount) || 0,
+              inStock: (parseInt(v.stockCount) || 0) > 0,
               order: index,
             })),
         },
