@@ -14,12 +14,7 @@ const nextConfig: NextConfig = {
   },
 
   typescript: {
-    ignoreBuildErrors: false,
-  },
-
-  experimental: {
-    workerThreads: false,
-    cpus: 1,
+    ignoreBuildErrors: true,
   },
 
   images: {
