@@ -331,7 +331,7 @@ export default function AdminOrdersPage() {
 
                 <div className="mt-3 pt-3 border-t border-royal-500/10 flex items-center gap-3">
                   <a
-                    href={`tel:${order.user.phone}`}
+                    href={`tel:${order.user?.phone || order.shippingPhone || ""}`}
                     onClick={(e) => e.stopPropagation()}
                     className="flex items-center gap-1 text-xs text-royal-500 font-bold hover:text-blush-500 transition-colors"
                   >
