@@ -74,19 +74,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const productIds = items.map((i) => i.productId);
+    const uniqueProductIds = Array.from(new Set(items.map((i) => i.productId)));
     const products = await prisma.product.findMany({
-      where: { id: { in: productIds }, isActive: true },
+      where: { id: { in: uniqueProductIds }, isActive: true },
       include: {
         images: { orderBy: { order: "asc" }, take: 1 },
         variants: true,
       },
     });
 
-    if (products.length !== productIds.length) {
+    if (products.length !== uniqueProductIds.length) {
       return NextResponse.json(
-        { success: false, error: "برخی محصولات دیگر موجود نیستند" },
+        { success: false, error: "برخی محصولات دیگر در دسترس یا فعال نیستند" },
         { status: 400 }
+      );
+    }
+
+    // بررسی تجمیعی موجودی در صورتی که چند آیتم از یک محصول/تنوع در سبد باشد
+    const requestedQuantities = new Map<string, number>();
+    for (const item of items) {
+      const key = item.variantId
+        ? `${item.productId}-${item.variantId}`
+        : item.productId;
+      requestedQuantities.set(
+        key,
+        (requestedQuantities.get(key) || 0) + item.quantity
       );
     }
 
@@ -94,24 +106,29 @@ export async function POST(request: NextRequest) {
       const product = products.find((p) => p.id === item.productId);
       if (!product) continue;
 
+      const key = item.variantId
+        ? `${item.productId}-${item.variantId}`
+        : item.productId;
+      const totalRequested = requestedQuantities.get(key) || item.quantity;
+
       if (item.variantId) {
         const variant = product.variants.find((v) => v.id === item.variantId);
-        if (!variant || !variant.inStock || variant.stockCount < item.quantity) {
+        if (!variant || !variant.inStock || variant.stockCount < totalRequested) {
           const vTitle = variant?.title || item.variantTitle || "";
           return NextResponse.json(
             {
               success: false,
-              error: `موجودی گزینه "${vTitle}" از محصول "${product.title}" کافی نیست (موجود: ${variant?.stockCount ?? 0})`,
+              error: `موجودی گزینه "${vTitle}" از محصول "${product.title}" کافی نیست (موجود در انبار: ${variant?.stockCount ?? 0})`,
             },
             { status: 400 }
           );
         }
       } else {
-        if (!product.inStock || product.stockCount < item.quantity) {
+        if (!product.inStock || product.stockCount < totalRequested) {
           return NextResponse.json(
             {
               success: false,
-              error: `موجودی "${product.title}" کافی نیست (موجود: ${product.stockCount})`,
+              error: `موجودی "${product.title}" کافی نیست (موجود در انبار: ${product.stockCount})`,
             },
             { status: 400 }
           );

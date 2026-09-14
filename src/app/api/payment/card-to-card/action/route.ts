@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
+import { requireAdmin } from "@/lib/adminAuth";
 import {
   notifyLowStock,
   notifyOutOfStock,
@@ -9,23 +10,47 @@ import {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const token = searchParams.get("token");
+  const orderId = searchParams.get("orderId");
   const action = searchParams.get("action"); // "approve" | "reject"
+  const wantsJson = request.headers.get("accept")?.includes("application/json");
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  if (!token || !action || !["approve", "reject"].includes(action)) {
+  if ((!token && !orderId) || !action || !["approve", "reject"].includes(action)) {
+    if (wantsJson) {
+      return NextResponse.json(
+        { success: false, error: "پارامترهای درخواست نامعتبر است" },
+        { status: 400 }
+      );
+    }
     return NextResponse.redirect(
       `${appUrl}/checkout/failed?reason=invalid_action`
     );
   }
 
   try {
-    const order = await prisma.order.findUnique({
-      where: { receiptToken: token },
-      include: { items: true },
-    });
+    let order = null;
+    if (token) {
+      order = await prisma.order.findUnique({
+        where: { receiptToken: token },
+        include: { items: true },
+      });
+    } else if (orderId) {
+      const auth = await requireAdmin();
+      if (auth.error) return auth.error;
+      order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+    }
 
     if (!order) {
+      if (wantsJson) {
+        return NextResponse.json(
+          { success: false, error: "سفارش یافت نشد یا لینک منقضی شده است" },
+          { status: 404 }
+        );
+      }
       return new NextResponse(
         generateHtml(
           "خطا",
@@ -37,6 +62,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (order.paymentStatus === "PAID") {
+      if (wantsJson) {
+        return NextResponse.json(
+          { success: false, error: `سفارش ${order.orderNumber} قبلاً تایید و پرداخت شده است` },
+          { status: 400 }
+        );
+      }
       return new NextResponse(
         generateHtml(
           "قبلاً تایید شده",
@@ -48,6 +79,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (order.paymentStatus === "FAILED") {
+      if (wantsJson) {
+        return NextResponse.json(
+          { success: false, error: `رسید سفارش ${order.orderNumber} قبلاً رد شده است` },
+          { status: 400 }
+        );
+      }
       return new NextResponse(
         generateHtml(
           "قبلاً رد شده",
@@ -67,6 +104,13 @@ export async function GET(request: NextRequest) {
           status: "CANCELLED",
         },
       });
+
+      if (wantsJson) {
+        return NextResponse.json({
+          success: true,
+          message: `رسید سفارش ${order.orderNumber} رد شد`,
+        });
+      }
 
       return new NextResponse(
         generateHtml(
@@ -171,6 +215,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    if (wantsJson) {
+      return NextResponse.json({
+        success: true,
+        message: `پرداخت سفارش ${order.orderNumber} با موفقیت تایید شد`,
+      });
+    }
+
     return new NextResponse(
       generateHtml(
         "رسید تایید شد ✅",
@@ -181,6 +232,12 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error("Card-to-card action error:", error);
+    if (wantsJson) {
+      return NextResponse.json(
+        { success: false, error: "خطا در پردازش درخواست" },
+        { status: 500 }
+      );
+    }
     return new NextResponse(
       generateHtml("خطای سرور", "مشکلی پیش آمد. لطفاً دوباره تلاش کنید.", false),
       { headers: { "Content-Type": "text/html; charset=utf-8" } }

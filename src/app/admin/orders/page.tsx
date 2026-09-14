@@ -36,7 +36,9 @@ type Order = {
   paymentStatus: string;
   totalAmount: number;
   createdAt: string;
-  user: OrderUser;
+  user?: OrderUser | null;
+  shippingFullName?: string;
+  shippingPhone?: string;
   items: OrderItem[];
   customerNote: string | null;
 };
@@ -124,8 +126,10 @@ export default function AdminOrdersPage() {
       result = result.filter(
         (o) =>
           o.orderNumber.toLowerCase().includes(q) ||
-          o.user.phone.includes(q) ||
-          (o.user.name && o.user.name.toLowerCase().includes(q))
+          (o.user?.phone && o.user.phone.includes(q)) ||
+          (o.shippingPhone && o.shippingPhone.includes(q)) ||
+          (o.user?.name && o.user.name.toLowerCase().includes(q)) ||
+          (o.shippingFullName && o.shippingFullName.toLowerCase().includes(q))
       );
     }
 
@@ -278,7 +282,7 @@ export default function AdminOrdersPage() {
                       مشتری
                     </div>
                     <div className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                      {order.user.name || "بدون نام"}
+                      {order.user?.name || order.shippingFullName || "بدون نام"}
                     </div>
                   </div>
 
@@ -290,7 +294,7 @@ export default function AdminOrdersPage() {
                       className="text-xs font-bold text-gray-900 dark:text-white truncate"
                       dir="ltr"
                     >
-                      {order.user.phone}
+                      {order.user?.phone || order.shippingPhone || "-"}
                     </div>
                   </div>
 

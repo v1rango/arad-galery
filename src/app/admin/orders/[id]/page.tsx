@@ -30,6 +30,8 @@ type OrderDetail = {
   paymentStatus: string;
   paymentMethod: string;
   paymentRef: string | null;
+  receiptImageUrl?: string | null;
+  receiptToken?: string | null;
   subtotal: number;
   shippingCost: number;
   discountAmount: number;
@@ -38,19 +40,25 @@ type OrderDetail = {
   adminNote: string | null;
   createdAt: string;
   updatedAt: string;
-  user: {
+  shippingFullName?: string;
+  shippingPhone?: string;
+  shippingProvince?: string;
+  shippingCity?: string;
+  shippingAddress?: string;
+  shippingPostalCode?: string;
+  user?: {
     id: string;
     name: string | null;
     phone: string;
-  };
-  address: {
-    fullName: string;
-    phone: string;
-    province: string;
-    city: string;
-    address: string;
-    postalCode: string;
-  };
+  } | null;
+  address?: {
+    fullName?: string;
+    phone?: string;
+    province?: string;
+    city?: string;
+    address?: string;
+    postalCode?: string;
+  } | null;
   items: Array<{
     id: string;
     productTitle: string;
@@ -166,6 +174,55 @@ export default function AdminOrderDetailPage({ params }: Props) {
       toast.error("خطا در ارتباط با سرور", { id: "save" });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const [isActingOnReceipt, setIsActingOnReceipt] = useState(false);
+
+  const handleReceiptAction = async (action: "approve" | "reject") => {
+    if (!order) return;
+    setIsActingOnReceipt(true);
+    toast.loading(
+      action === "approve"
+        ? "در حال تایید رسید و کسر موجودی..."
+        : "در حال رد رسید...",
+      { id: "receipt-act" }
+    );
+
+    try {
+      const url = order.receiptToken
+        ? `/api/payment/card-to-card/action?token=${order.receiptToken}&action=${action}`
+        : `/api/payment/card-to-card/action?orderId=${order.id}&action=${action}`;
+
+      const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success(
+          data.message ||
+            (action === "approve" ? "رسید با موفقیت تایید شد" : "رسید رد شد"),
+          { id: "receipt-act" }
+        );
+        setOrder((prev) =>
+          prev
+            ? {
+                ...prev,
+                paymentStatus: action === "approve" ? "PAID" : "FAILED",
+                status: action === "approve" ? "PROCESSING" : "CANCELLED",
+              }
+            : null
+        );
+        setSelectedStatus(action === "approve" ? "PROCESSING" : "CANCELLED");
+        router.refresh();
+      } else {
+        toast.error(data.error || "خطا در انجام عملیات", { id: "receipt-act" });
+      }
+    } catch {
+      toast.error("خطا در ارتباط با سرور", { id: "receipt-act" });
+    } finally {
+      setIsActingOnReceipt(false);
     }
   };
 
@@ -296,20 +353,35 @@ export default function AdminOrderDetailPage({ params }: Props) {
           <div>
             <div className="text-[11px] text-gray-500 mb-1">نام و نام خانوادگی</div>
             <div className="font-bold text-gray-900 dark:text-white">
-              {order.address.fullName}
+              {order.address?.fullName ||
+                order.shippingFullName ||
+                order.user?.name ||
+                "ثبت نشده"}
             </div>
           </div>
 
           <div>
             <div className="text-[11px] text-gray-500 mb-1">شماره تماس</div>
-            <a
-              href={`tel:${order.address.phone}`}
-              className="font-bold text-royal-500 hover:text-blush-500 transition-colors flex items-center gap-1"
-              dir="ltr"
-            >
-              <Phone size={14} />
-              <span>{order.address.phone}</span>
-            </a>
+            {order.address?.phone || order.shippingPhone || order.user?.phone ? (
+              <a
+                href={`tel:${
+                  order.address?.phone ||
+                  order.shippingPhone ||
+                  order.user?.phone
+                }`}
+                className="font-bold text-royal-500 hover:text-blush-500 transition-colors flex items-center gap-1"
+                dir="ltr"
+              >
+                <Phone size={14} />
+                <span>
+                  {order.address?.phone ||
+                    order.shippingPhone ||
+                    order.user?.phone}
+                </span>
+              </a>
+            ) : (
+              <span className="text-gray-400">-</span>
+            )}
           </div>
         </div>
 
@@ -335,15 +407,96 @@ export default function AdminOrderDetailPage({ params }: Props) {
           <div className="flex items-start gap-2">
             <MapPin size={14} className="text-gray-400 mt-1 shrink-0" />
             <span className="text-gray-700 dark:text-gray-300 leading-7">
-              {order.address.province}، {order.address.city}،{" "}
-              {order.address.address}
+              {order.address?.province || order.shippingProvince || ""}،{" "}
+              {order.address?.city || order.shippingCity || ""}،{" "}
+              {order.address?.address || order.shippingAddress || ""}
             </span>
           </div>
           <div className="text-xs text-gray-500 mr-6" dir="ltr">
-            کد پستی: {order.address.postalCode}
+            کد پستی:{" "}
+            {order.address?.postalCode || order.shippingPostalCode || "-"}
           </div>
         </div>
       </section>
+
+      {/* بخش رسید پرداخت کارت به کارت */}
+      {order.paymentMethod === "CARD_TO_CARD" && (
+        <section className="bg-white dark:bg-royal-500/5 rounded-2xl border border-royal-500/10 p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-royal-500/10 flex-wrap gap-2">
+            <h2 className="text-base font-black text-gray-900 dark:text-white flex items-center gap-2">
+              <CreditCard size={18} className="text-royal-500" />
+              <span>رسید پرداخت کارت به کارت</span>
+            </h2>
+
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold ${
+                order.paymentStatus === "PAID"
+                  ? "bg-green-500/10 text-green-600 border border-green-500/20"
+                  : order.paymentStatus === "FAILED"
+                  ? "bg-red-500/10 text-red-500 border border-red-500/20"
+                  : "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+              }`}
+            >
+              {order.paymentStatus === "PAID"
+                ? "✅ پرداخت تایید شده"
+                : order.paymentStatus === "FAILED"
+                ? "❌ رسید رد شده"
+                : "⏳ در انتظار بررسی رسید"}
+            </span>
+          </div>
+
+          {order.receiptImageUrl ? (
+            <div className="space-y-4">
+              <div className="relative max-w-sm mx-auto overflow-hidden rounded-2xl border border-royal-500/20 bg-black/5 p-2 text-center">
+                <a
+                  href={order.receiptImageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block group relative"
+                  title="کلیک برای مشاهده اندازه کامل در تب جدید"
+                >
+                  <img
+                    src={order.receiptImageUrl}
+                    alt="رسید پرداخت"
+                    className="w-full max-h-80 object-contain mx-auto rounded-xl group-hover:scale-105 transition-transform"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity rounded-xl">
+                    مشاهده تصویر در اندازه کامل ↗
+                  </div>
+                </a>
+              </div>
+
+              {order.paymentStatus !== "PAID" && (
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleReceiptAction("approve")}
+                    disabled={isActingOnReceipt}
+                    className="flex-1 max-w-xs flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    <CheckCircle size={18} />
+                    <span>تایید رسید و ثبت پرداخت</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleReceiptAction("reject")}
+                    disabled={isActingOnReceipt}
+                    className="flex-1 max-w-xs flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    <XCircle size={18} />
+                    <span>رد رسید</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 py-3 text-center">
+              هنوز تصویری برای رسید این سفارش ارسال نشده است.
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="bg-white dark:bg-royal-500/5 rounded-2xl border border-royal-500/10 p-5">
         <h2 className="text-base font-black text-gray-900 dark:text-white pb-3 mb-3 border-b border-royal-500/10 flex items-center gap-2">

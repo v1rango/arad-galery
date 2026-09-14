@@ -102,10 +102,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // ارسال ایمیل به ادمین
+    // ارسال ایمیل به ادمین با پیوست مستقیم تصویر
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const approveUrl = `${appUrl}/api/payment/card-to-card/action?token=${receiptToken}&action=approve`;
     const rejectUrl = `${appUrl}/api/payment/card-to-card/action?token=${receiptToken}&action=reject`;
+    const adminOrderUrl = `${appUrl}/admin/orders/${order.id}`;
 
     const html = `
       <!DOCTYPE html>
@@ -118,17 +119,18 @@ export async function POST(request: NextRequest) {
             .header { background: linear-gradient(135deg, #7c3aed, #ec4899); color: white; padding: 30px 20px; text-align: center; }
             .content { padding: 30px 20px; color: #333; line-height: 1.8; }
             .info { background: #f9fafb; border-right: 4px solid #7c3aed; padding: 15px; border-radius: 8px; margin: 20px 0; }
-            .btn { display: inline-block; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-weight: bold; margin: 8px 6px; color: white !important; }
+            .btn { display: inline-block; text-decoration: none; padding: 12px 24px; border-radius: 12px; font-weight: bold; margin: 8px 4px; color: white !important; font-size: 14px; }
             .btn-approve { background: #16a34a; }
             .btn-reject { background: #dc2626; }
+            .btn-admin { background: #6366f1; }
             .footer { background: #f9fafb; padding: 20px; text-align: center; color: #666; font-size: 12px; }
-            img.receipt { max-width: 100%; border-radius: 12px; margin-top: 15px; }
+            img.receipt { max-width: 100%; border-radius: 12px; margin-top: 15px; border: 1px solid #e5e7eb; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1>🧾 رسید پرداخت جدید</h1>
+              <h1 style="margin:0;font-size:22px;">🧾 رسید پرداخت جدید</h1>
             </div>
             <div class="content">
               <div class="info">
@@ -138,16 +140,23 @@ export async function POST(request: NextRequest) {
                 <p><strong>شماره تماس:</strong> ${order.shippingPhone}</p>
               </div>
 
-              <p>تصویر رسید پرداخت:</p>
-              <img class="receipt" src="${appUrl}${receiptImageUrl}" alt="رسید پرداخت" />
+              <p><strong>تصویر رسید پرداخت:</strong></p>
+              <div style="text-align: center; margin: 15px 0;">
+                <img class="receipt" src="cid:receipt-image" alt="رسید پرداخت سفارش ${order.orderNumber}" />
+                <p style="margin-top: 8px; font-size: 12px; color: #6b7280;">
+                  (تصویر به این ایمیل پیوست شده است. در صورت تمایل می‌توانید <a href="${appUrl}${receiptImageUrl}" target="_blank" style="color:#7c3aed;">از اینجا نیز دانلود کنید</a>)
+                </p>
+              </div>
 
               <div style="text-align: center; margin-top: 30px;">
                 <a href="${approveUrl}" class="btn btn-approve">✅ تایید رسید</a>
                 <a href="${rejectUrl}" class="btn btn-reject">❌ رد رسید</a>
+                <br />
+                <a href="${adminOrderUrl}" class="btn btn-admin">🔍 مشاهده در پنل مدیریت</a>
               </div>
             </div>
             <div class="footer">
-              <p>این ایمیل به‌صورت خودکار از سیستم آراد گالری ارسال شده است</p>
+              <p>این ایمیل به‌صورت خودکار از سیستم فروشگاه آراد گالری ارسال شده است</p>
             </div>
           </div>
         </body>
@@ -157,6 +166,14 @@ export async function POST(request: NextRequest) {
     await sendEmail({
       subject: `🧾 رسید پرداخت سفارش ${order.orderNumber}`,
       html,
+      attachments: [
+        {
+          filename: filename,
+          content: buffer,
+          contentType: file.type || "image/jpeg",
+          cid: "receipt-image",
+        },
+      ],
     });
 
     return NextResponse.json({

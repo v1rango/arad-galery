@@ -90,6 +90,41 @@ function CardToCardContent() {
     loadData();
   }, [orderNumber, router]);
 
+  // استعلام خودکار وضعیت تایید سفارش به صورت لحظه‌ای بدون نیاز به ریفرش
+  useEffect(() => {
+    if (!orderNumber || !order) return;
+    // اگر سفارش قبلاً تایید شده یا لغو قطعی است، پولینگ نیاز نیست
+    if (order.paymentStatus === "PAID" || order.paymentStatus === "FAILED") return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders/by-number/${orderNumber}`);
+        const data = await res.json();
+        if (data.success && data.data) {
+          const newStatus = data.data.paymentStatus;
+          if (newStatus !== order.paymentStatus) {
+            setOrder((prev) => (prev ? { ...prev, ...data.data } : null));
+            if (newStatus === "PAID") {
+              toast.success("رسید پرداخت شما با موفقیت تایید شد! ✨🎉", {
+                duration: 7000,
+                id: "order-status-paid",
+              });
+            } else if (newStatus === "FAILED") {
+              toast.error("رسید پرداخت تایید نشد. می‌توانید مجدداً رسید ارسال فرمایید.", {
+                duration: 7000,
+                id: "order-status-failed",
+              });
+            }
+          }
+        }
+      } catch {
+        // نادیده گرفتن خطاهای موقت در Polling
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [orderNumber, order?.paymentStatus]);
+
   const copyCardNumber = () => {
     if (!cardInfo.cardNumber) return;
     navigator.clipboard.writeText(cardInfo.cardNumber.replace(/\s/g, ""));
@@ -299,10 +334,10 @@ function CardToCardContent() {
           )}
         </div>
 
-        {!isPaid && !isRejected && (
+        {!isPaid && (
           <div className="bg-white dark:bg-royal-500/5 rounded-3xl border border-royal-500/10 p-5">
             <h2 className="font-black mb-4 text-gray-900 dark:text-white">
-              ارسال رسید پرداخت
+              {isRejected ? "ارسال مجدد رسید پرداخت" : "ارسال رسید پرداخت"}
             </h2>
 
             {preview ? (

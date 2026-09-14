@@ -32,13 +32,19 @@ type OrderDetail = {
   totalAmount: number;
   customerNote: string | null;
   createdAt: string;
-  address: {
-    fullName: string;
-    phone: string;
-    province: string;
-    city: string;
-    address: string;
-    postalCode: string;
+  shippingFullName?: string;
+  shippingPhone?: string;
+  shippingProvince?: string;
+  shippingCity?: string;
+  shippingAddress?: string;
+  shippingPostalCode?: string;
+  address?: {
+    fullName?: string;
+    phone?: string;
+    province?: string;
+    city?: string;
+    address?: string;
+    postalCode?: string;
   };
   items: Array<{
     id: string;
@@ -203,16 +209,22 @@ export default function OrderDetailPage({ params }: Props) {
 
         <div className="space-y-2 text-sm">
           <div className="font-bold text-gray-900 dark:text-white">
-            {order.address.fullName}
+            {order.address?.fullName || order.shippingFullName || "ثبت نشده"}
           </div>
           <div className="text-gray-600 dark:text-gray-400 leading-7">
-            {order.address.province}، {order.address.city}،{" "}
-            {order.address.address}
+            {order.address?.province || order.shippingProvince || ""}،{" "}
+            {order.address?.city || order.shippingCity || ""}،{" "}
+            {order.address?.address || order.shippingAddress || ""}
           </div>
           <div className="text-xs text-gray-500 flex items-center gap-3" dir="ltr">
-            <span>کد پستی: {order.address.postalCode}</span>
+            <span>
+              کد پستی:{" "}
+              {order.address?.postalCode || order.shippingPostalCode || "-"}
+            </span>
             <span>|</span>
-            <span>{order.address.phone}</span>
+            <span>
+              {order.address?.phone || order.shippingPhone || "-"}
+            </span>
           </div>
         </div>
       </div>

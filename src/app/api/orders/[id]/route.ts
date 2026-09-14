@@ -21,6 +21,13 @@ export async function GET(
       where: { id },
       include: {
         items: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+          },
+        },
       },
     });
 
@@ -38,9 +45,21 @@ export async function GET(
       );
     }
 
+    const formattedOrder = {
+      ...order,
+      address: {
+        fullName: order.shippingFullName,
+        phone: order.shippingPhone,
+        province: order.shippingProvince,
+        city: order.shippingCity,
+        address: order.shippingAddress,
+        postalCode: order.shippingPostalCode,
+      },
+    };
+
     return NextResponse.json({
       success: true,
-      data: order,
+      data: formattedOrder,
     });
   } catch (error) {
     console.error("خطا در دریافت سفارش:", error);

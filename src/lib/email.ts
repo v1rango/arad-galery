@@ -8,12 +8,21 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+export type EmailAttachment = {
+  filename: string;
+  content?: Buffer | string;
+  path?: string;
+  contentType?: string;
+  cid?: string;
+};
+
 type SendEmailOptions = {
   subject: string;
   html: string;
+  attachments?: EmailAttachment[];
 };
 
-export async function sendEmail({ subject, html }: SendEmailOptions) {
+export async function sendEmail({ subject, html, attachments }: SendEmailOptions) {
   try {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD || !process.env.EMAIL_TO) {
       console.warn("⚠️  تنظیمات ایمیل کامل نیست، ایمیل ارسال نشد");
@@ -25,6 +34,7 @@ export async function sendEmail({ subject, html }: SendEmailOptions) {
       to: process.env.EMAIL_TO,
       subject,
       html,
+      attachments,
     });
 
     console.log(`📧 ایمیل ارسال شد: ${info.messageId}`);
