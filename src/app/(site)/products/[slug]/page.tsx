@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import { ChevronLeft, Home } from "lucide-react";
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
@@ -12,7 +12,7 @@ import { Product } from "@/types/product";
 
 export const dynamic = "force-dynamic";
 
-const RelatedProducts = dynamic(
+const RelatedProducts = nextDynamic(
   () => import("@/components/product/RelatedProducts"),
   {
     loading: () => (
