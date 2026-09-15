@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
+import { sendNewOrderAdminSms } from "@/lib/sms";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomBytes } from "crypto";
@@ -175,6 +176,12 @@ export async function POST(request: NextRequest) {
         },
       ],
     });
+
+    try {
+      await sendNewOrderAdminSms({ orderNumber: order.orderNumber });
+    } catch (smsErr) {
+      console.error("Failed to send admin SMS on upload receipt:", smsErr);
+    }
 
     return NextResponse.json({
       success: true,

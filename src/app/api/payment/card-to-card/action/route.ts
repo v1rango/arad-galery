@@ -6,6 +6,7 @@ import {
   notifyLowStock,
   notifyOutOfStock,
 } from "@/lib/notifications";
+import { sendOrderApprovedCustomerSms } from "@/lib/sms";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -213,6 +214,28 @@ export async function GET(request: NextRequest) {
       ) {
         await notifyLowStock(update.title, update.productId, update.newStock);
       }
+    }
+
+    // ارسال پیامک تایید سفارش به مشتری
+    try {
+      const customerPhone = order.shippingPhone;
+      if (customerPhone) {
+        const itemLines = order.items.map((item) => {
+          const title = item.variantTitle
+            ? `${item.productTitle} (${item.variantTitle})`
+            : item.productTitle;
+          return `${title} (${item.quantity} عدد)`;
+        });
+        const itemsSummary = itemLines.join("، ");
+
+        await sendOrderApprovedCustomerSms({
+          phone: customerPhone,
+          orderNumber: order.orderNumber,
+          itemsSummary,
+        });
+      }
+    } catch (smsErr) {
+      console.error("Failed to send customer approval SMS:", smsErr);
     }
 
     if (wantsJson) {

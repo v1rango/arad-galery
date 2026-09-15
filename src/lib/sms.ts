@@ -32,13 +32,19 @@ function isAdminPhone(phone: string): boolean {
   return ADMIN_PHONES_FOR_LOG.includes(normalizePhone(phone));
 }
 
-async function sendViaPanelchi(
-  phone: string,
-  code: string,
-  apiKey: string,
-  patternCode: string,
-  customSourceNumber?: string | null
-): Promise<SendSmsResult> {
+async function sendPatternViaPanelchi({
+  phone,
+  patternCode,
+  variables,
+  apiKey,
+  customSourceNumber,
+}: {
+  phone: string;
+  patternCode: string;
+  variables: Record<string, string | number>;
+  apiKey: string;
+  customSourceNumber?: string | null;
+}): Promise<SendSmsResult> {
   try {
     const normalizedPhone = normalizePhone(phone);
     const recipient = "+98" + normalizedPhone.slice(1);
@@ -46,7 +52,12 @@ async function sendViaPanelchi(
     const cleanPatternCode = patternCode.trim();
     const sourceNumber = (customSourceNumber || "10001").trim();
 
-    console.log(`📡 [Panelchi API] ارسال سریع OTP به ${recipient} از خط ${sourceNumber}`);
+    const formattedVariables: Record<string, string> = {};
+    for (const [k, v] of Object.entries(variables)) {
+      formattedVariables[k] = v !== undefined && v !== null ? v.toString() : "";
+    }
+
+    console.log(`📡 [Panelchi API] ارسال پترن ${cleanPatternCode} به ${recipient} از خط ${sourceNumber}`);
 
     const response = await fetch("https://api.panelchi.com/sms/pattern", {
       method: "POST",
@@ -56,9 +67,7 @@ async function sendViaPanelchi(
       },
       body: JSON.stringify({
         pattern: cleanPatternCode,
-        variables: {
-          code: code.toString(),
-        },
+        variables: formattedVariables,
         recipient: recipient,
         sourceNumber: sourceNumber,
       }),
@@ -69,14 +78,14 @@ async function sendViaPanelchi(
     try { data = JSON.parse(responseText); } catch {}
 
     if (response.ok || response.status === 201 || data?.status === "CREATED") {
-      console.log(`✅ پیامک با موفقیت ارسال شد.`);
+      console.log(`✅ [Panelchi API] پیامک با موفقیت به ${recipient} ارسال شد.`);
       return { success: true };
     }
 
     console.error("❌ خطای ارسال پیامک پنل‌چی:", responseText);
     return { success: false, error: responseText };
   } catch (err: any) {
-    console.error("❌ خطای شبکه:", err.message);
+    console.error("❌ خطای شبکه ارسال پیامک:", err.message);
     return { success: false, error: err.message };
   }
 }
@@ -102,5 +111,85 @@ export async function sendOtpSms({ phone, code }: SendOtpParams): Promise<SendSm
     return { success: true, logged: true };
   }
 
-  return sendViaPanelchi(phone, code, apiKey, patternCode, originator);
+  return sendPatternViaPanelchi({
+    phone,
+    patternCode,
+    variables: { code },
+    apiKey,
+    customSourceNumber: originator,
+  });
+}
+
+// شماره مادر گرامی جهت دریافت پیامک اطلاع‌رسانی سفارش جدید
+export const ADMIN_NOTIF_PHONE = "09129367584";
+export const PATTERN_NEW_ORDER_ADMIN = "v2ej6";
+export const PATTERN_ORDER_APPROVED_CUSTOMER = "fmulg";
+
+/**
+ * ارسال پیامک به مادر برای سفارش جدید کارت‌به‌کارت (پترن v2ej6)
+ */
+export async function sendNewOrderAdminSms({
+  orderNumber,
+}: {
+  orderNumber: string;
+}): Promise<SendSmsResult> {
+  const settings = await getSettings();
+  const apiKey = (settings.ippanelApiKey || process.env.IPPANEL_API_KEY || "").trim();
+  const originator = (settings.ippanelSenderNumber || settings.ippanelOriginator || process.env.IPPANEL_ORIGINATOR || "10001").trim();
+
+  if (!apiKey) {
+    console.warn("⚠️ تنظیمات سامانه پیامک موجود نیست، پیامک به ادمین ارسال نشد");
+    return { success: false, error: "SMS API Key missing" };
+  }
+
+  const numericOrderId = orderNumber.replace(/\D/g, "") || orderNumber;
+
+  console.log(`📱 در حال ارسال پیامک سفارش جدید (${orderNumber} -> ${numericOrderId}) به ادمین (${ADMIN_NOTIF_PHONE})...`);
+
+  return sendPatternViaPanelchi({
+    phone: ADMIN_NOTIF_PHONE,
+    patternCode: PATTERN_NEW_ORDER_ADMIN,
+    variables: {
+      orderId: numericOrderId,
+    },
+    apiKey,
+    customSourceNumber: originator,
+  });
+}
+
+/**
+ * ارسال پیامک تایید سفارش به مشتری با جزئیات اقلام و قیمت (پترن fmulg)
+ */
+export async function sendOrderApprovedCustomerSms({
+  phone,
+  orderNumber,
+  itemsSummary,
+}: {
+  phone: string;
+  orderNumber: string;
+  itemsSummary: string;
+}): Promise<SendSmsResult> {
+  const settings = await getSettings();
+  const apiKey = (settings.ippanelApiKey || process.env.IPPANEL_API_KEY || "").trim();
+  const originator = (settings.ippanelSenderNumber || settings.ippanelOriginator || process.env.IPPANEL_ORIGINATOR || "10001").trim();
+
+  if (!apiKey) {
+    console.warn("⚠️ تنظیمات سامانه پیامک موجود نیست، پیامک تایید به مشتری ارسال نشد");
+    return { success: false, error: "SMS API Key missing" };
+  }
+
+  const numericOrderId = orderNumber.replace(/\D/g, "") || orderNumber;
+
+  console.log(`📱 در حال ارسال پیامک تایید سفارش (${orderNumber} -> ${numericOrderId}) به مشتری (${phone})...`);
+
+  return sendPatternViaPanelchi({
+    phone,
+    patternCode: PATTERN_ORDER_APPROVED_CUSTOMER,
+    variables: {
+      items: itemsSummary,
+      orderId: numericOrderId,
+    },
+    apiKey,
+    customSourceNumber: originator,
+  });
 }

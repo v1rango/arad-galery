@@ -168,7 +168,7 @@ function CardToCardContent() {
       const data = await res.json();
 
       if (data.success) {
-        toast.success("رسید با موفقیت ارسال شد و در صف تایید قرار گرفت", {
+        toast.success("رسید شما دریافت شد و در انتظار تایید رسید است. پس از تایید، جزئیات سفارش به شما اطلاع‌رسانی خواهد شد.", {
           id: "upload",
         });
         setOrder((prev) =>
@@ -280,11 +280,10 @@ function CardToCardContent() {
             />
             <div>
               <p className="font-bold text-amber-700 dark:text-amber-400">
-                در صف تایید رسید
+                رسید شما دریافت شد و در انتظار تایید است
               </p>
               <p className="text-sm text-amber-600/80 mt-1">
-                رسید شما دریافت شد و در حال بررسی است. به محض تایید به شما اطلاع
-                داده می‌شود.
+                رسید شما دریافت شد و در انتظار تایید رسید است و بعد از تایید رسید، جزئیات سفارش به شما اطلاع‌رسانی خواهد شد.
               </p>
             </div>
           </div>
