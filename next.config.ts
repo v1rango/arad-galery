@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
 
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
+  },
+
   images: {
     remotePatterns: [
       {
