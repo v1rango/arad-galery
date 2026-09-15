@@ -10,3 +10,4 @@ skills-lock.json
 README.md
 *.tsbuildinfo
 public/uploads
+src/generated
