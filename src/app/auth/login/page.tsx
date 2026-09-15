@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Phone, ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import Logo from "@/components/ui/Logo";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,7 +36,10 @@ export default function LoginPage() {
 
       if (data.success) {
         toast.success("کد تایید ارسال شد", { id: "otp" });
-        router.push(`/auth/verify?phone=${phone}`);
+        const verifyUrl = redirect
+          ? `/auth/verify?phone=${phone}&redirect=${encodeURIComponent(redirect)}`
+          : `/auth/verify?phone=${phone}`;
+        router.push(verifyUrl);
       } else {
         toast.error(data.error || "خطا در ارسال کد", { id: "otp" });
       }
@@ -141,5 +146,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">در حال بارگذاری...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

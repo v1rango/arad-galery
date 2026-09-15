@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Tag, CreditCard, Truck, Info, X, Check, Loader2 } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/authStore";
 import toast from "react-hot-toast";
 
 function formatPrice(price: number): string {
@@ -25,6 +26,7 @@ export default function CartSummary() {
   const appliedCoupon = useCartStore((state) => state.appliedCoupon);
   const applyCoupon = useCartStore((state) => state.applyCoupon);
   const removeCoupon = useCartStore((state) => state.removeCoupon);
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     async function loadSettings() {
@@ -259,7 +261,8 @@ export default function CartSummary() {
       </div>
 
       <Link
-        href="/checkout"
+        href={user ? "/checkout" : "/auth/login?redirect=/checkout"}
+        prefetch={false}
         className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gradient-to-l from-royal-500 to-blush-500 text-white font-bold hover:shadow-2xl hover:shadow-royal-500/30 transition-all duration-300 hover:-translate-y-0.5"
       >
         <CreditCard size={20} />

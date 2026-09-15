@@ -11,6 +11,7 @@ function VerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const phone = searchParams.get("phone") || "";
+  const redirect = searchParams.get("redirect");
   const fetchUser = useAuthStore((state) => state.fetchUser);
 
   const [code, setCode] = useState(["", "", "", ""]);
@@ -22,9 +23,13 @@ function VerifyContent() {
 
   useEffect(() => {
     if (!phone || phone.length !== 11) {
-      router.replace("/auth/login");
+      router.replace(
+        redirect
+          ? `/auth/login?redirect=${encodeURIComponent(redirect)}`
+          : "/auth/login"
+      );
     }
-  }, [phone, router]);
+  }, [phone, router, redirect]);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -83,11 +88,8 @@ function VerifyContent() {
       if (data.success) {
         toast.success("با موفقیت وارد شدید! ✨", { id: "verify" });
         await fetchUser();
-        const redirect = searchParams.get("redirect");
-        if (redirect) {
-          sessionStorage.setItem("fromLogin", "true");
-        }
-        router.push(redirect || "/");
+        const target = redirect && redirect.startsWith("/") ? redirect : "/";
+        window.location.href = target;
       } else {
         toast.error(data.error || "کد نامعتبر است", { id: "verify" });
         setCode(["", "", "", ""]);
@@ -205,7 +207,11 @@ function VerifyContent() {
 
           <div className="mt-6 pt-6 border-t border-royal-500/10 text-center">
             <Link
-              href="/auth/login"
+              href={
+                redirect
+                  ? `/auth/login?redirect=${encodeURIComponent(redirect)}`
+                  : "/auth/login"
+              }
               className="inline-flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 hover:text-royal-500 transition-colors"
             >
               <ArrowRight size={14} />
