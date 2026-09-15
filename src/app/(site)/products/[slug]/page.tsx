@@ -10,6 +10,8 @@ import ProductTabs from "@/components/product/ProductTabs";
 import ProductJsonLd from "@/components/seo/ProductJsonLd";
 import { Product } from "@/types/product";
 
+export const dynamic = "force-dynamic";
+
 const RelatedProducts = dynamic(
   () => import("@/components/product/RelatedProducts"),
   {
