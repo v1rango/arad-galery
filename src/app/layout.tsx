@@ -8,12 +8,16 @@ import "@fontsource/vazirmatn/700.css";
 import "@fontsource/vazirmatn/900.css";
 import ThemeProvider from "@/providers/ThemeProvider";
 import OrganizationJsonLd from "@/components/seo/OrganizationJsonLd";
+import WebSiteJsonLd from "@/components/seo/WebSiteJsonLd";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://arad-gallery.ir"),
   title: {
     default: "آراد گالری | فروشگاه آنلاین لوازم آرایشی و بهداشتی اورجینال",
     template: "%s | آراد گالری",
+  },
+  alternates: {
+    canonical: "/",
   },
   description:
     "خرید آنلاین لوازم آرایشی و بهداشتی اورجینال از برندهای معتبر جهانی مثل MAC، Maybelline، L'Oreal، NARS. آراد گالری با ضمانت اصالت کالا، ارسال سریع به سراسر ایران و قیمت مناسب.",
@@ -95,6 +99,7 @@ export default function RootLayout({
     <html lang="fa" dir="rtl" suppressHydrationWarning>
       <body>
         <OrganizationJsonLd />
+        <WebSiteJsonLd />
         <ThemeProvider>
           <AuthInitializer />
           <Toaster

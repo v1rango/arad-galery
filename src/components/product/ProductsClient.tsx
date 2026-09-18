@@ -1,0 +1,211 @@
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import ProductCard from "@/components/product/ProductCard";
+import ProductFilters from "@/components/product/ProductFilters";
+import { PackageSearch, Plus, Check, ChevronLeft } from "lucide-react";
+import { Product, CategoryWithChildren } from "@/types/product";
+import { fetchProducts, PaginationInfo } from "@/lib/api";
+
+type SortOption = "newest" | "cheapest" | "expensive" | "bestselling";
+
+interface ProductsClientProps {
+  initialProducts: Product[];
+  categories: CategoryWithChildren[];
+  initialPagination: PaginationInfo;
+  categorySlug?: string;
+  subSlug?: string;
+}
+
+export default function ProductsClient({
+  initialProducts,
+  categories,
+  initialPagination,
+  categorySlug,
+  subSlug,
+}: ProductsClientProps) {
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortOption>("newest");
+
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(initialPagination);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Sync state if initial props change (e.g. route navigation)
+  useEffect(() => {
+    setProducts(initialProducts);
+    setPagination(initialPagination);
+  }, [initialProducts, initialPagination, categorySlug, subSlug]);
+
+  const handleLoadMore = async () => {
+    if (!pagination || !pagination.hasMore || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const nextPage = pagination.page + 1;
+      const res = await fetchProducts(nextPage, categorySlug, subSlug);
+
+      setProducts((prev) => [...prev, ...res.products]);
+      setPagination(res.pagination);
+    } catch (error) {
+      console.error("Error loading more products:", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const currentCategory = categories.find((c) => c.slug === categorySlug);
+  const currentSub = currentCategory?.children?.find((s) => s.slug === subSlug);
+
+  const pageTitle = currentSub
+    ? currentSub.name
+    : currentCategory
+    ? currentCategory.name
+    : "همه محصولات";
+
+  const filteredProducts = useMemo(() => {
+    let result = [...products];
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          p.category?.name.toLowerCase().includes(q)
+      );
+    }
+
+    switch (sort) {
+      case "cheapest":
+        result.sort(
+          (a, b) => (a.discountPrice ?? a.price) - (b.discountPrice ?? b.price)
+        );
+        break;
+      case "expensive":
+        result.sort(
+          (a, b) => (b.discountPrice ?? b.price) - (a.discountPrice ?? a.price)
+        );
+        break;
+      case "bestselling":
+        result.sort((a, b) => (b.stockCount ?? 0) - (a.stockCount ?? 0));
+        break;
+      case "newest":
+      default:
+        result.sort((a, b) => {
+          const aDate = new Date(a.createdAt).getTime();
+          const bDate = new Date(b.createdAt).getTime();
+          return bDate - aDate;
+        });
+        break;
+    }
+
+    return result;
+  }, [search, sort, products]);
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8">
+      {/* Header */}
+      <div className="space-y-3">
+        <nav className="flex items-center gap-2 text-xs font-bold text-zinc-400">
+          <span>محصولات</span>
+          {currentCategory && (
+            <>
+              <ChevronLeft size={14} className="text-zinc-300 dark:text-zinc-600" />
+              <span className="text-royal-600 dark:text-royal-400">
+                {currentCategory.name}
+              </span>
+            </>
+          )}
+          {currentSub && (
+            <>
+              <ChevronLeft size={14} className="text-zinc-300 dark:text-zinc-600" />
+              <span className="text-blush-500">{currentSub.name}</span>
+            </>
+          )}
+        </nav>
+
+        <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">
+          {pageTitle}
+        </h1>
+      </div>
+
+      {/* Filters Bar */}
+      <ProductFilters
+        search={search}
+        onSearchChange={setSearch}
+        sort={sort}
+        onSortChange={setSort}
+        totalCount={filteredProducts.length}
+      />
+
+      {/* Product Grid */}
+      {filteredProducts.length > 0 ? (
+        <div className="space-y-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+
+          {/* Load More */}
+          {pagination && (
+            <div className="flex flex-col items-center justify-center gap-4 pt-6 border-t border-zinc-100 dark:border-zinc-800/60">
+              <p className="text-xs font-bold text-zinc-400">
+                نمایش{" "}
+                <span className="text-zinc-900 dark:text-white">
+                  {products.length.toLocaleString("fa-IR")}
+                </span>{" "}
+                از{" "}
+                <span className="text-zinc-900 dark:text-white">
+                  {pagination.total.toLocaleString("fa-IR")}
+                </span>{" "}
+                محصول
+              </p>
+
+              {pagination.hasMore ? (
+                <button
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-gradient-to-tr from-royal-600 via-royal-500 to-blush-500 text-white text-sm font-black hover:shadow-lg hover:shadow-royal-500/25 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>در حال بارگذاری...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={18} />
+                      <span>نمایش محصولات بیشتر</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                products.length > 0 && (
+                  <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                    <Check size={16} />
+                    <span>همه‌ی محصولات مشاهده شدند</span>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Empty State */
+        <div className="flex flex-col items-center justify-center py-24 text-center rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-dashed border-zinc-200 dark:border-zinc-800">
+          <div className="w-16 h-16 rounded-2xl bg-royal-500/10 flex items-center justify-center mb-4 text-royal-500">
+            <PackageSearch size={32} />
+          </div>
+          <h3 className="text-base font-black text-zinc-900 dark:text-white mb-1">
+            محصولی یافت نشد
+          </h3>
+          <p className="text-xs text-zinc-400 max-w-sm font-medium">
+            نتیجه‌ای متناسب با فیلترهای انتخابی شما پیدا نشد.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

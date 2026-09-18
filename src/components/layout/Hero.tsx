@@ -35,10 +35,11 @@ export default function Hero() {
             className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.3] md:leading-[1.25] text-zinc-900 dark:text-white"
           >
             <span className="bg-gradient-to-l from-royal-600 via-royal-500 to-blush-500 bg-clip-text text-transparent">
-              درخشش و زیبایی
+              آراد گالری؛
             </span>
-            <br />
-            شایسته شخصیت شماست
+            <span className="block mt-1 sm:mt-2 text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-zinc-900 dark:text-white">
+              درخشش و زیبایی شایسته شماست
+            </span>
           </motion.h1>
 
           <motion.p 

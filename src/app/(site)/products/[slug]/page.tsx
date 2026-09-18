@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import nextDynamic from "next/dynamic";
 import { ChevronLeft, Home } from "lucide-react";
@@ -8,6 +8,7 @@ import ProductGallery from "@/components/product/ProductGallery";
 import ProductInfo from "@/components/product/ProductInfo";
 import ProductTabs from "@/components/product/ProductTabs";
 import ProductJsonLd from "@/components/seo/ProductJsonLd";
+import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
 import { Product } from "@/types/product";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +38,26 @@ const RelatedProducts = nextDynamic(
     ),
   }
 );
+
+const OLD_SLUG_REDIRECTS: Record<string, string> = {
+  "slugcalista-pink-womens-body-splash": "calista-pink-womens-body-splash",
+  "sharel: sharel-splendor-deodorant-spray": "sharel-splendor-deodorant-spray",
+  "sharel:%20sharel-splendor-deodorant-spray": "sharel-splendor-deodorant-spray",
+  "لdove-women-deodorant-spray-150ml": "dove-women-deodorant-spray-150ml",
+  "%D9%84dove-women-deodorant-spray-150ml": "dove-women-deodorant-spray-150ml",
+  "bold-volumerimel-kalista-bold-volume 🧡": "rimel-kalista-bold-volume-orange",
+  "bold-volumerimel-kalista-bold-volume%20%F0%9F%A7%A1": "rimel-kalista-bold-volume-orange",
+  "Zoppini Eyebrow Lift Gel": "zoppini-eyebrow-lift-gel",
+  "Zoppini%20Eyebrow%20Lift%20Gel": "zoppini-eyebrow-lift-gel",
+  ": ellaro-sulfate-free-shampoo-dry-colored-hair": "ellaro-sulfate-free-shampoo-dry-colored-hair",
+  ":%20ellaro-sulfate-free-shampoo-dry-colored-hair": "ellaro-sulfate-free-shampoo-dry-colored-hair",
+  "\u200Bultra-mini-perfume-30ml": "ultra-mini-perfume-30ml",
+  "%E2%80%8Bultra-mini-perfume-30ml": "ultra-mini-perfume-30ml",
+  "\u200Bbiol-biscuit-hair-ice-cream": "biol-biscuit-hair-ice-cream",
+  "%E2%80%8Bbiol-biscuit-hair-ice-cream": "biol-biscuit-hair-ice-cream",
+  "\u200Bbutterfly-5-in-1-moisture-cream": "butterfly-5-in-1-moisture-cream",
+  "%E2%80%8Bbutterfly-5-in-1-moisture-cream": "butterfly-5-in-1-moisture-cream",
+};
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -96,6 +117,12 @@ async function getRelatedProducts(currentId: string, categoryId: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const decoded = decodeURIComponent(slug).trim();
+  const redirectedSlug = OLD_SLUG_REDIRECTS[slug] || OLD_SLUG_REDIRECTS[decoded];
+  if (redirectedSlug) {
+    permanentRedirect(`/products/${redirectedSlug}`);
+  }
+
   const product = await getProduct(slug);
 
   if (!product) {
@@ -178,6 +205,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
+  const decoded = decodeURIComponent(slug).trim();
+  const redirectedSlug = OLD_SLUG_REDIRECTS[slug] || OLD_SLUG_REDIRECTS[decoded];
+  if (redirectedSlug) {
+    permanentRedirect(`/products/${redirectedSlug}`);
+  }
+
   const product = await getProduct(slug);
 
   if (!product) {
@@ -189,9 +222,28 @@ export default async function ProductDetailPage({ params }: Props) {
   const serializedProduct = JSON.parse(JSON.stringify(product)) as Product;
   const serializedRelated = JSON.parse(JSON.stringify(relatedProducts)) as Product[];
 
+  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://arad-gallery.ir";
+  const breadcrumbItems = [
+    { name: "خانه", url: `${BASE_URL}/` },
+    { name: "محصولات", url: `${BASE_URL}/products` },
+    ...(serializedProduct.category
+      ? [
+          {
+            name: serializedProduct.category.name,
+            url: `${BASE_URL}/products?category=${serializedProduct.category.slug}`,
+          },
+        ]
+      : []),
+    {
+      name: serializedProduct.title,
+      url: `${BASE_URL}/products/${serializedProduct.slug}`,
+    },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 space-y-10 md:space-y-14">
       <ProductJsonLd product={serializedProduct} />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
 
       {/* Breadcrumb Nav */}
       <nav className="flex items-center gap-2 text-xs font-bold text-zinc-400 flex-wrap">
