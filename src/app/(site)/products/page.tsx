@@ -21,7 +21,7 @@ type Props = {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { category: categorySlug, sub: subSlug } = await searchParams;
 
-  let title = "فروشگاه و خرید لوازم آرایشی و بهداشتی اورجینال | آراد گالری";
+  let title = "فروشگاه و خرید لوازم آرایشی و بهداشتی اورجینال";
   let description =
     "مشاهده و خرید آنلاین برترین لوازم آرایشی و مراقبت از پوست و مو اورجینال از برندهای معتبر جهانی در آراد گالری با ضمانت اصالت کالا و ارسال سریع به سراسر ایران.";
   let canonical = `${BASE_URL}/products`;
@@ -31,7 +31,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       where: { slug: subSlug },
     });
     if (subCategory) {
-      title = `${subCategory.seoTitle || `خرید ${subCategory.name} اورجینال`} | آراد گالری`;
+      title = subCategory.seoTitle || `خرید انواع ${subCategory.name} اورجینال`;
       description =
         subCategory.seoDescription ||
         `خرید آنلاین انواع ${subCategory.name} اصل با بهترین قیمت، ضمانت اصالت و ارسال سریع از فروشگاه آراد گالری.`;
@@ -42,7 +42,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       where: { slug: categorySlug },
     });
     if (mainCategory) {
-      title = `${mainCategory.seoTitle || `خرید محصولات ${mainCategory.name} اورجینال`} | آراد گالری`;
+      title = mainCategory.seoTitle || `خرید محصولات ${mainCategory.name} اورجینال`;
       description =
         mainCategory.seoDescription ||
         `خرید اینترنتی انواع محصولات ${mainCategory.name} اصل از معتبرترین برندهای جهان در آراد گالری با تضمین اصالت و ارسال فوری.`;
