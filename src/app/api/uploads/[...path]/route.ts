@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFile, writeFile, mkdir } from "fs/promises";
+import { readFile } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 
@@ -22,50 +22,21 @@ export async function GET(
     // مسیر فایل روی disk
     const fullPath = path.join(process.cwd(), "public", "uploads", filename);
 
+    if (!existsSync(fullPath)) {
+      return new NextResponse("Not Found", { status: 404 });
+    }
+
+    const file = await readFile(fullPath);
+
     const ext = filename.split(".").pop()?.toLowerCase() || "";
     const contentType = CONTENT_TYPES[ext] || "application/octet-stream";
 
-    if (existsSync(fullPath)) {
-      const file = await readFile(fullPath);
-      return new NextResponse(file, {
-        headers: {
-          "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000, immutable",
-        },
-      });
-    }
-
-    // اگر فایل لوکال نبود، تلاش برای واکشی از سرور اصلی (پروداکشن)
-    const remoteUrl = `https://arad-gallery.ir/api/uploads/${filename}`;
-    try {
-      const remoteRes = await fetch(remoteUrl, { signal: AbortSignal.timeout(5000) });
-      if (remoteRes.ok) {
-        const arrayBuffer = await remoteRes.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        // ذخیره کش در پوشه لوکال
-        try {
-          const dir = path.dirname(fullPath);
-          if (!existsSync(dir)) {
-            await mkdir(dir, { recursive: true });
-          }
-          await writeFile(fullPath, buffer);
-        } catch {
-          // خطا در ذخیره لوکال مانع ارسال فایل نمی‌شود
-        }
-
-        return new NextResponse(buffer, {
-          headers: {
-            "Content-Type": remoteRes.headers.get("content-type") || contentType,
-            "Cache-Control": "public, max-age=31536000, immutable",
-          },
-        });
-      }
-    } catch {
-      // سرور پروداکشن در دسترس نیست یا فایل وجود ندارد
-    }
-
-    return new NextResponse("Not Found", { status: 404 });
+    return new NextResponse(file, {
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
   } catch (error) {
     console.error("Error serving file:", error);
     return new NextResponse("Server Error", { status: 500 });
