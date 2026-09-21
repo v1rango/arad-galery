@@ -48,9 +48,15 @@ export async function PUT(
       );
     }
 
-    if (slug !== existingProduct.slug) {
+    const cleanSlug = slug
+      .trim()
+      .toLowerCase()
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .replace(/\s+/g, "-");
+
+    if (cleanSlug !== existingProduct.slug) {
       const slugExists = await prisma.product.findUnique({
-        where: { slug },
+        where: { slug: cleanSlug },
       });
       if (slugExists) {
         return NextResponse.json(
@@ -80,7 +86,7 @@ export async function PUT(
       where: { id },
       data: {
         title,
-        slug,
+        slug: cleanSlug,
         brand,
         description: description || null,
         seoTitle: seoTitle || null,

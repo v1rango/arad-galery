@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 import { prisma } from "../src/lib/prisma";
 
 const SLUG_MAPPINGS: { id: string; oldSlug: string; newSlug: string }[] = [
@@ -45,6 +47,41 @@ const SLUG_MAPPINGS: { id: string; oldSlug: string; newSlug: string }[] = [
     id: "cmu46vsko002zs30k1b0l788s",
     oldSlug: "\u200Bbutterfly-5-in-1-moisture-cream",
     newSlug: "butterfly-5-in-1-moisture-cream",
+  },
+  {
+    id: "cmu8mt0l50004l40k96fw9dgw",
+    oldSlug: "\u200Bbody-care-perfumed-body-spray",
+    newSlug: "body-care-perfumed-body-spray",
+  },
+  {
+    id: "cmubd53e10001l40k90fnaw1x",
+    oldSlug: "\u200Bstacy-mens-hair-color-kit",
+    newSlug: "stacy-mens-hair-color-kit",
+  },
+  {
+    id: "cmtv1wcw8000yo20kz43kg71v",
+    oldSlug: "Caspian-hair-spray-150ml",
+    newSlug: "caspian-hair-spray-150ml",
+  },
+  {
+    id: "cmtv1ppee000to20kh26jnzkh",
+    oldSlug: "Caspian-hair-spray-250mil",
+    newSlug: "caspian-hair-spray-250mil",
+  },
+  {
+    id: "cmtv2gqhh001co20khz5j0u3z",
+    oldSlug: "With-you-french-vanilla-body-cream",
+    newSlug: "with-you-french-vanilla-body-cream",
+  },
+  {
+    id: "cmu33dg2x001as20k14tez1cr",
+    oldSlug: "Note-new-era-foundation-spf50",
+    newSlug: "note-new-era-foundation-spf50",
+  },
+  {
+    id: "cmtkjnv4f000gpo0k2g01kbo4",
+    oldSlug: "انبر-کاشت-مژه-زد-وان-z-one",
+    newSlug: "anbar-kasht-mozheh-z-one",
   },
 ];
 

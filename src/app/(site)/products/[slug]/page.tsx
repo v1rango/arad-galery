@@ -57,15 +57,46 @@ const OLD_SLUG_REDIRECTS: Record<string, string> = {
   "%E2%80%8Bbiol-biscuit-hair-ice-cream": "biol-biscuit-hair-ice-cream",
   "\u200Bbutterfly-5-in-1-moisture-cream": "butterfly-5-in-1-moisture-cream",
   "%E2%80%8Bbutterfly-5-in-1-moisture-cream": "butterfly-5-in-1-moisture-cream",
+  "\u200Bbody-care-perfumed-body-spray": "body-care-perfumed-body-spray",
+  "%E2%80%8Bbody-care-perfumed-body-spray": "body-care-perfumed-body-spray",
+  "\u200Bstacy-mens-hair-color-kit": "stacy-mens-hair-color-kit",
+  "%E2%80%8Bstacy-mens-hair-color-kit": "stacy-mens-hair-color-kit",
+  "Caspian-hair-spray-150ml": "caspian-hair-spray-150ml",
+  "Caspian-hair-spray-250mil": "caspian-hair-spray-250mil",
+  "With-you-french-vanilla-body-cream": "with-you-french-vanilla-body-cream",
+  "Note-new-era-foundation-spf50": "note-new-era-foundation-spf50",
+  "انبر-کاشت-مژه-زد-وان-z-one": "anbar-kasht-mozheh-z-one",
+  "%D8%A7%D9%86%D8%A8%D8%B1-%DA%A9%D8%A7%D8%B4%D8%AA-%D9%85%DA%98%D9%87-%D8%B2%D8%AF-%D9%88%D8%A7%D9%86-z-one": "anbar-kasht-mozheh-z-one",
 };
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
-async function getProduct(slug: string) {
-  const product = await prisma.product.findUnique({
-    where: { slug, isActive: true },
+async function getProduct(rawSlug: string) {
+  let decoded = rawSlug;
+  try {
+    decoded = decodeURIComponent(rawSlug).trim();
+  } catch {
+    decoded = rawSlug.trim();
+  }
+  const clean = decoded.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+  const lower = clean.toLowerCase();
+
+  const product = await prisma.product.findFirst({
+    where: {
+      OR: [
+        { slug: clean },
+        { slug: lower },
+        { slug: decoded },
+        { slug: rawSlug },
+        { slug: `\u200B${clean}` },
+        { slug: { equals: clean, mode: "insensitive" } },
+        { slug: { equals: decoded, mode: "insensitive" } },
+        { slug: { equals: rawSlug, mode: "insensitive" } },
+      ],
+      isActive: true,
+    },
     include: {
       category: true,
       images: { orderBy: { order: "asc" } },
@@ -117,8 +148,18 @@ async function getRelatedProducts(currentId: string, categoryId: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const decoded = decodeURIComponent(slug).trim();
-  const redirectedSlug = OLD_SLUG_REDIRECTS[slug] || OLD_SLUG_REDIRECTS[decoded];
+  let decoded = slug;
+  try {
+    decoded = decodeURIComponent(slug).trim();
+  } catch {
+    decoded = slug.trim();
+  }
+  const clean = decoded.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+  const redirectedSlug =
+    OLD_SLUG_REDIRECTS[slug] ||
+    OLD_SLUG_REDIRECTS[decoded] ||
+    OLD_SLUG_REDIRECTS[clean];
+
   if (redirectedSlug) {
     permanentRedirect(`/products/${redirectedSlug}`);
   }
@@ -205,8 +246,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const decoded = decodeURIComponent(slug).trim();
-  const redirectedSlug = OLD_SLUG_REDIRECTS[slug] || OLD_SLUG_REDIRECTS[decoded];
+  let decoded = slug;
+  try {
+    decoded = decodeURIComponent(slug).trim();
+  } catch {
+    decoded = slug.trim();
+  }
+  const clean = decoded.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+  const redirectedSlug =
+    OLD_SLUG_REDIRECTS[slug] ||
+    OLD_SLUG_REDIRECTS[decoded] ||
+    OLD_SLUG_REDIRECTS[clean];
+
   if (redirectedSlug) {
     permanentRedirect(`/products/${redirectedSlug}`);
   }
@@ -215,6 +266,10 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!product) {
     notFound();
+  }
+
+  if (product.slug !== slug && product.slug !== decoded) {
+    permanentRedirect(`/products/${product.slug}`);
   }
 
   const relatedProducts = await getRelatedProducts(product.id, product.categoryId);

@@ -86,30 +86,38 @@ export default async function ProductsPage({ searchParams }: Props) {
     ];
   }
 
-  const [productsRaw, total, categoriesRaw] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      include: {
-        category: {
-          include: { parent: true },
+  let productsRaw: any[] = [];
+  let total = 0;
+  let categoriesRaw: any[] = [];
+
+  try {
+    [productsRaw, total, categoriesRaw] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          category: {
+            include: { parent: true },
+          },
+          images: { orderBy: { order: "asc" } },
+          specs: { orderBy: { order: "asc" } },
         },
-        images: { orderBy: { order: "asc" } },
-        specs: { orderBy: { order: "asc" } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: PAGE_SIZE,
-    }),
-    prisma.product.count({ where }),
-    prisma.category.findMany({
-      where: { parentId: null },
-      include: {
-        children: {
-          orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: "desc" },
+        take: PAGE_SIZE,
+      }),
+      prisma.product.count({ where }),
+      prisma.category.findMany({
+        where: { parentId: null },
+        include: {
+          children: {
+            orderBy: { createdAt: "asc" },
+          },
         },
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-  ]);
+        orderBy: { createdAt: "asc" },
+      }),
+    ]);
+  } catch (error) {
+    console.error("Error loading products:", error);
+  }
 
   const products = JSON.parse(JSON.stringify(productsRaw)) as Product[];
   const categories = JSON.parse(JSON.stringify(categoriesRaw)) as CategoryWithChildren[];

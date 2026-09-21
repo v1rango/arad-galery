@@ -33,7 +33,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existing = await prisma.product.findUnique({ where: { slug } });
+    const cleanSlug = slug
+      .trim()
+      .toLowerCase()
+      .replace(/[\u200B-\u200D\uFEFF]/g, "")
+      .replace(/\s+/g, "-");
+
+    const existing = await prisma.product.findUnique({ where: { slug: cleanSlug } });
     if (existing) {
       return NextResponse.json(
         { success: false, error: "محصولی با این slug قبلاً ثبت شده" },
@@ -54,7 +60,7 @@ export async function POST(request: NextRequest) {
     const product = await prisma.product.create({
       data: {
         title,
-        slug,
+        slug: cleanSlug,
         brand,
         description: description || null,
         seoTitle: seoTitle || null,

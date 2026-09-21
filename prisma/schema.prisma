@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://root:D7sU3po4QosYQsxmhREzGgFC@logan.liara.cloud:31349/postgres"
+  url      = env("DATABASE_URL")
 }
 model User {
   id           String        @id @default(cuid())

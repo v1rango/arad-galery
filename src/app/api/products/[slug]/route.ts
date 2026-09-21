@@ -6,11 +6,28 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = await params;
+    const { slug: rawSlug } = await params;
+    let decoded = rawSlug;
+    try {
+      decoded = decodeURIComponent(rawSlug).trim();
+    } catch {
+      decoded = rawSlug.trim();
+    }
+    const clean = decoded.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+    const lower = clean.toLowerCase();
 
-    const product = await prisma.product.findUnique({
+    const product = await prisma.product.findFirst({
       where: {
-        slug,
+        OR: [
+          { slug: clean },
+          { slug: lower },
+          { slug: decoded },
+          { slug: rawSlug },
+          { slug: `\u200B${clean}` },
+          { slug: { equals: clean, mode: "insensitive" } },
+          { slug: { equals: decoded, mode: "insensitive" } },
+          { slug: { equals: rawSlug, mode: "insensitive" } },
+        ],
         isActive: true,
       },
       include: {
