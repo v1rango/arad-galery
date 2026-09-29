@@ -17,11 +17,18 @@ export async function GET() {
       orderBy: { createdAt: "asc" },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: categories,
-      count: categories.length,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: categories,
+        count: categories.length,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error) {
     console.error("خطا در دریافت دسته‌بندی‌ها:", error);
     return NextResponse.json(

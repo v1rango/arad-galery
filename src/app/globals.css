@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Vazirmatn", sans-serif;
+  --font-sans: var(--font-vazirmatn), "Vazirmatn", system-ui, sans-serif;
 
   /* پالت رنگی اختصاصی و لوکس آراد گالری */
   --color-royal-50: #f5f3ff;

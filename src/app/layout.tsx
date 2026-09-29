@@ -1,12 +1,16 @@
 import AuthInitializer from "@/components/AuthInitializer";
 import type { Metadata } from "next";
 import { Toaster } from "react-hot-toast";
+import { Vazirmatn } from "next/font/google";
 import "./globals.css";
-import "@fontsource/vazirmatn/400.css";
-import "@fontsource/vazirmatn/500.css";
-import "@fontsource/vazirmatn/700.css";
-import "@fontsource/vazirmatn/900.css";
 import ThemeProvider from "@/providers/ThemeProvider";
+
+const vazirmatn = Vazirmatn({
+  subsets: ["arabic", "latin"],
+  display: "swap",
+  weight: ["400", "500", "700", "900"],
+  variable: "--font-vazirmatn",
+});
 import OrganizationJsonLd from "@/components/seo/OrganizationJsonLd";
 import WebSiteJsonLd from "@/components/seo/WebSiteJsonLd";
 
@@ -96,8 +100,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fa" dir="rtl" suppressHydrationWarning>
-      <body>
+    <html lang="fa" dir="rtl" className={vazirmatn.variable} suppressHydrationWarning>
+      <body className="font-sans">
         <OrganizationJsonLd />
         <WebSiteJsonLd />
         <ThemeProvider>

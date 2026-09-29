@@ -7,12 +7,11 @@ import { prisma } from "@/lib/prisma";
 import { Product } from "@/types/product";
 
 const AnimatedShowcase = nextDynamic(() => import("@/components/product/AnimatedShowcase"), {
-  loading: () => <div className="h-[400px] rounded-[2.5rem] bg-zinc-100 dark:bg-zinc-900 animate-pulse"></div>,
+  loading: () => <div className="min-h-[450px] md:min-h-[400px] rounded-[2.5rem] bg-zinc-100 dark:bg-zinc-900 animate-pulse"></div>,
   ssr: true,
 });
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 60;
 
 async function getHomeData() {
   const topSellingItems = await prisma.orderItem.groupBy({
@@ -142,6 +141,7 @@ export default async function Home() {
           subtitle="محبوب‌ترین محصولات از دید مشتریان آراد گالری"
           products={bestSellers}
           viewAllHref="/products"
+          priorityFirst={true}
         />
       </div>
 

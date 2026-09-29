@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, BadgePercent } from "lucide-react";
 import { Product } from "@/types/product";
@@ -119,10 +120,13 @@ export default function AnimatedShowcase({ products }: AnimatedShowcaseProps) {
               <div className="absolute w-48 h-48 md:w-72 md:h-72 bg-gradient-to-br from-royal-500/20 to-blush-500/20 rounded-full blur-2xl" />
               
               <div className="relative w-48 h-48 md:w-72 md:h-72 rounded-[2rem] overflow-hidden border border-white/50 dark:border-zinc-800/80 luxury-shadow bg-white dark:bg-zinc-900">
-                <img
+                <Image
                   src={productImage}
                   alt={currentProduct.title}
-                  className="w-full h-full object-cover transition-transform duration-[3000ms] hover:scale-110"
+                  fill
+                  priority={currentIndex === 0}
+                  sizes="(max-width: 768px) 192px, 288px"
+                  className="object-cover transition-transform duration-[3000ms] hover:scale-110"
                 />
               </div>
             </motion.div>

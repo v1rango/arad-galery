@@ -1,16 +1,10 @@
-"use client";
-
 import Link from "next/link";
 import { Sparkles, ArrowLeft } from "lucide-react";
-import { motion } from "framer-motion";
 
 export default function Hero() {
   return (
-    <motion.section 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="relative overflow-hidden py-12 md:py-20 lg:py-32 rounded-[2rem] md:rounded-[2.5rem] mt-2 md:mt-4 border border-zinc-200/50 dark:border-zinc-800/50 bg-gradient-to-b from-royal-50/50 via-white to-white dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-950"
+    <section 
+      className="relative overflow-hidden py-12 md:py-20 lg:py-32 rounded-[2rem] md:rounded-[2.5rem] mt-2 md:mt-4 border border-zinc-200/50 dark:border-zinc-800/50 bg-gradient-to-b from-royal-50/50 via-white to-white dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-950 animate-fade-in-up"
     >
       <div className="absolute top-0 right-1/3 w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-royal-500/10 rounded-full blur-[100px] md:blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 left-1/3 w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-blush-500/10 rounded-full blur-[100px] md:blur-[120px] pointer-events-none" />
@@ -18,20 +12,14 @@ export default function Hero() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto space-y-5 md:space-y-8">
           
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+          <div 
             className="inline-flex items-center gap-2 bg-royal-500/10 dark:bg-royal-500/20 text-royal-600 dark:text-royal-400 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[10px] sm:text-xs md:text-sm font-extrabold border border-royal-500/20 backdrop-blur-md"
           >
             <Sparkles size={14} className="text-royal-500 animate-pulse" />
             <span>مجموعه‌ی جدید برندهای آرایشی رسید</span>
-          </motion.div>
+          </div>
 
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+          <h1 
             className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.3] md:leading-[1.25] text-zinc-900 dark:text-white"
           >
             <span className="bg-gradient-to-l from-royal-600 via-royal-500 to-blush-500 bg-clip-text text-transparent">
@@ -40,21 +28,15 @@ export default function Hero() {
             <span className="block mt-1 sm:mt-2 text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-zinc-900 dark:text-white">
               درخشش و زیبایی شایسته شماست
             </span>
-          </motion.h1>
+          </h1>
 
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+          <p 
             className="text-sm sm:text-base md:text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-2xl mx-auto font-medium px-2 md:px-0"
           >
             مرجع تخصصی خرید آنلاین لوازم آرایشی و مراقبت پوستی اورجینال از برترین برندهای جهانی با ضمانت اصالت و ارسال فوری.
-          </motion.p>
+          </p>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+          <div 
             className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 pt-4 px-4 sm:px-0"
           >
             <Link
@@ -71,9 +53,9 @@ export default function Hero() {
             >
               درباره آراد گالری
             </Link>
-          </motion.div>
+          </div>
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 }

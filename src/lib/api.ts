@@ -96,7 +96,7 @@ export async function fetchCategories(): Promise<CategoryWithChildren[]> {
   try {
     const baseUrl = getBaseUrl();
     const res = await fetch(`${baseUrl}/api/categories`, {
-      cache: "no-store",
+      next: { revalidate: 300 },
     });
 
     if (!res.ok) {

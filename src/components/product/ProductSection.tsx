@@ -8,9 +8,10 @@ type Props = {
   subtitle?: string;
   products: Product[];
   viewAllHref?: string;
+  priorityFirst?: boolean;
 };
 
-export default function ProductSection({ title, subtitle, products, viewAllHref }: Props) {
+export default function ProductSection({ title, subtitle, products, viewAllHref, priorityFirst = false }: Props) {
   if (!products || products.length === 0) return null;
 
   return (
@@ -45,7 +46,7 @@ export default function ProductSection({ title, subtitle, products, viewAllHref 
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         {products.map((product, index) => (
-          <ProductCard key={product.id} product={product} priority={index < 4} />
+          <ProductCard key={product.id} product={product} priority={priorityFirst && index === 0} />
         ))}
       </div>
     </section>

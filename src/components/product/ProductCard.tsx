@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Heart, Plus, Minus, Trash2 } from "lucide-react";
@@ -27,8 +26,6 @@ function calculateDiscount(price: number, discountPrice: number): number {
 
 export default function ProductCard({ product, priority = false }: Props) {
   const router = useRouter();
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const addItem = useCartStore((state) => state.addItem);
   const removeItem = useCartStore((state) => state.removeItem);
@@ -111,47 +108,15 @@ export default function ProductCard({ product, priority = false }: Props) {
     }
   };
 
-  // منطق افکت ۳ بعدی تیلت
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    
-    const rotateX = ((y - centerY) / centerY) * -5; // حداکثر ۵ درجه چرخش
-    const rotateY = ((x - centerX) / centerX) * 5;
-    
-    setMousePosition({ 
-      x: (x / rect.width) * 100, 
-      y: (y / rect.height) * 100,
-    });
-    
-    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-  };
-
-  const handleMouseLeave = () => {
-    if (!cardRef.current) return;
-    cardRef.current.style.transform = "perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)";
-  };
-
   return (
-    <div className="group relative" style={{ perspective: "1000px" }}>
+    <div className="group relative">
       {/* هاله نورانی پشت کارت */}
       <div
-        className="absolute -inset-0.5 bg-gradient-to-tr from-royal-500 via-blush-500 to-royal-500 rounded-[1.8rem] opacity-0 group-hover:opacity-40 blur-xl transition-opacity duration-500"
-        style={{
-          backgroundPosition: `${mousePosition.x}% ${mousePosition.y}%`
-        }}
+        className="absolute -inset-0.5 bg-gradient-to-tr from-royal-500 via-blush-500 to-royal-500 rounded-[1.8rem] opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-300 pointer-events-none"
       />
 
       <div 
-        ref={cardRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        className="relative bg-white dark:bg-zinc-900 rounded-[1.6rem] border border-zinc-100 dark:border-zinc-800/80 overflow-hidden luxury-shadow transition-transform duration-300 ease-out flex flex-col justify-between h-full"
+        className="relative bg-white dark:bg-zinc-900 rounded-[1.6rem] border border-zinc-100 dark:border-zinc-800/80 overflow-hidden luxury-shadow group-hover:-translate-y-1.5 transition-transform duration-300 ease-out flex flex-col justify-between h-full"
       >
         <div className="relative">
           <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5">

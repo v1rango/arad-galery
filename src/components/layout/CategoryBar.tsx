@@ -1,8 +1,5 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
 
 import { Category } from "@/types/product";
 
@@ -16,25 +13,9 @@ export default function CategoryBar({ categories }: CategoryBarProps) {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="-mx-4 flex items-center justify-start gap-5 overflow-x-auto px-4 pb-4 scrollbar-hide md:mx-0 md:justify-center md:gap-8 md:px-0">
-        {categories.map((category, index) => (
-          <motion.div
+        {categories.map((category) => (
+          <div
             key={category.id}
-            initial={{ opacity: 0, transform: "translateY(16px)" }}
-            whileInView={{ opacity: 1, transform: "translateY(0px)" }}
-            viewport={{
-              once: true,
-              amount: 0.1,
-            }}
-            transition={{
-              opacity: {
-                duration: 0.25,
-                delay: index * 0.04,
-              },
-              transform: {
-                duration: 0.25,
-                delay: index * 0.04,
-              },
-            }}
             className="shrink-0"
           >
             <Link
@@ -70,7 +51,7 @@ export default function CategoryBar({ categories }: CategoryBarProps) {
                 <span className="absolute -bottom-1 right-0 h-0.5 w-0 bg-royal-500 transition-[width] duration-200 group-hover:w-full" />
               </span>
             </Link>
-          </motion.div>
+          </div>
         ))}
       </div>
     </div>
